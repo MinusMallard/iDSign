@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">iDSign</string>
+    <string name="servicedesc">Digital Document Signatures</string>
+    <string name="aiddescription">Application ID</string>
+</resources>
