@@ -1,6 +1,7 @@
 package com.example.idsign;
 
 import android.content.Context;
+import android.content.Intent;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
@@ -265,6 +266,11 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
 
                         deviceName = decrypt(result,HTK);
                         Log.d("Remote Device Name: ",deviceName);
+
+                        runOnUiThread(()->{
+                            Intent intent = new Intent(this, SigneePage2.class);
+                            startActivity(intent);
+                        });
 
                     }
 

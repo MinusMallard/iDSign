@@ -48,11 +48,11 @@ public class SignerActivity extends AppCompatActivity {
 
         Intent intent = new Intent(this, MyHostApduService.class);
         startService(intent);
-
-
     }
 
-
-
-
+    public void intentToSignerPage2(){
+            // On HCE Connection Lost this method will run via the MyHostApduService class onDeactivated Method
+            Intent intent = new Intent(this, SignerPage2.class);
+            startActivity(intent);
+    }
 }

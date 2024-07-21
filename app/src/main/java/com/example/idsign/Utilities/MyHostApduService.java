@@ -19,6 +19,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import com.example.idsign.SignerActivity;
+import com.example.idsign.SignerPage2;
 import com.example.idsign.recycleView.*;
 import java.util.List;
 
@@ -182,6 +184,7 @@ public class MyHostApduService extends HostApduService {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+            Log.d("Final Log from HCE","device name sent");
             return responseAPDU;
         }
 
@@ -191,7 +194,9 @@ public class MyHostApduService extends HostApduService {
 
     @Override
     public void onDeactivated(int reason) {
-
+        Intent intent = new Intent(this, SignerPage2.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
     }
 
     // Generate Handshake Traffic Key (HTK) using HKDF
