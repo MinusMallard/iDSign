@@ -1,15 +1,12 @@
-package com.example.idsign;
+package com.example.idsign.Utilities;
 
-import android.app.Service;
+import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
 import android.nfc.cardemulation.HostApduService;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -21,6 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 import com.example.idsign.recycleView.*;
 import java.util.List;
 
@@ -37,7 +35,8 @@ public class MyHostApduService extends HostApduService {
     public static List<Task> taskList = new ArrayList<>();
     private TaskAdapter taskAdapter;
     public static RecyclerView recyclerView;
-    private static byte[] bluetoothAddress;
+    private String deviceName ;
+    private byte[] responseAPDU,HTK;
     // Signer's Identity
     String IDs = "signerapp@hcecard.com";
 
@@ -56,18 +55,19 @@ public class MyHostApduService extends HostApduService {
         return super.onStartCommand(intent, flags, startId);
     }
 
+    @SuppressLint("MissingPermission")
     public void init(){
         taskAdapter = new TaskAdapter(this,taskList);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(taskAdapter);
-//        bluetoothAddress = getLocalBluetoothAddress();
+        deviceName = BluetoothAdapter.getDefaultAdapter().getName();
     }
 
     @Override
     public byte[] processCommandApdu(byte[] commandApdu, Bundle extras) {
 
         Log.d("HOST APDU SERVICE 1","INSIDE process command apdu");
-        if (Arrays.equals(commandApdu,Utils.SELECT_APDU)){
+        if (Arrays.equals(commandApdu, Utils.SELECT_APDU)){
             init();
             taskAdapter.updateTask(0,true);
 
@@ -96,7 +96,6 @@ public class MyHostApduService extends HostApduService {
 
             // ResponseAPDU = SelectOK([0x90][0x00])+LengthsOf EKs([EKs_Length])+[IDs]+[EKs_Bytes]
             // Length of PKs and EKs is same as both are from G1 curve
-            byte[] responseAPDU;
             try {
                 responseAPDU = Utils.concatArrays(Utils.SELECT_OK_SW, new byte[]{EKs_Length}, Utils.sha256(IDs), EKs.toBytes());
             } catch (NoSuchAlgorithmException e) {
@@ -151,23 +150,26 @@ public class MyHostApduService extends HostApduService {
             System.arraycopy(x_EKd_bytes, 0, SSs, 0, x_EKd_bytes.length);
             System.arraycopy(SSs_PairingResult_bytes, 0, SSs, x_EKd_bytes.length, SSs_PairingResult_bytes.length);
 
-            byte[] HTK = generateHTK(SSs,PKG_Setup.Ppub.toBytes());
+            HTK = generateHTK(SSs,PKG_Setup.Ppub.toBytes());
 
             taskAdapter.updateTask(3,true);
 
             Log.d("HTK GENERATED",Arrays.toString(HTK));
 
+            // Decrypting the received encrypted message and modifying it and again encrypting it to send it back
             String testMessage;
             try {
                 Log.d("HOST APDU SERVICE 7 ","Going for decryption");
                 testMessage = decrypt(encryptedMessage, HTK);
+                testMessage = testMessage+"SUCCESS";
                 encryptedMessage = encrypt(testMessage, HTK);
                 Log.d("HOST APDU SERVICE 8 Decryption completed",testMessage);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
 
-            byte[] responseAPDU = Utils.concatArrays(Utils.SELECT_OK_SW,new byte[]{(byte) encryptedMessage.length},encryptedMessage);
+            // Loading ResponseAPDU with encrypted message for authentication
+            responseAPDU = Utils.concatArrays(Utils.SELECT_OK_SW,encryptedMessage);
 
             taskAdapter.updateTask(4,true);
             taskAdapter.updateTask(5,true);
@@ -175,8 +177,12 @@ public class MyHostApduService extends HostApduService {
             return responseAPDU;
         }else if (commandApdu[0] == (byte) 0x70 && commandApdu[1] == (byte) 0x02){
 
-            Log.d("Bluetooth Address in Bytes",Arrays.toString(bluetoothAddress));
-            return bluetoothAddress;
+            try {
+                responseAPDU = encrypt(deviceName,HTK);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            return responseAPDU;
         }
 
 

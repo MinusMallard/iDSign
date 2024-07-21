@@ -1,33 +1,21 @@
 package com.example.idsign;
 
-import android.Manifest;
-
-import android.annotation.SuppressLint;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.nfc.NfcAdapter;
 import android.nfc.Tag;
 import android.nfc.tech.IsoDep;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.idsign.Utilities.PKG_Setup;
+import com.example.idsign.Utilities.Utils;
 import com.example.idsign.recycleView.Task;
 import com.example.idsign.recycleView.TaskAdapter;
 
@@ -42,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -57,6 +44,7 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
     RecyclerView recyclerView;
     List<Task> taskList;
     TaskAdapter taskAdapter;
+    public static String deviceName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -222,9 +210,7 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
 
                     Log.d("HTK GENERATED", Arrays.toString(HTK));
 
-                    Log.d("FOUND IT FINALLY 11", "HTK GENERATED SUCCESSFULLLY");
-
-                    // Generating TEST MESSAGE to check whether both parties have computed same Handshake Traffic Key
+                    // Generating random TEST MESSAGE and encrypting it to check whether both parties have computed same Handshake Traffic Key
                     String testMessageToSend = generateRandomString(20);
                     byte[] encryptedMessage = encrypt(testMessageToSend, HTK);
                     byte encryptedMessageLength = (byte) encryptedMessage.length;
@@ -247,20 +233,21 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
 
                     if (Arrays.equals(status, Utils.SELECT_OK_SW)) {
 
-                        encryptedMessageLength = (byte) (result[3] & 0xFF);
-                        encryptedMessage = Arrays.copyOfRange(result, 3, result.length);
+                        // Fetching received encrypted message
+                        encryptedMessage = Arrays.copyOfRange(result, 2, result.length);
 
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
                                 taskAdapter.updateTask(4, true);
-
                             }
                         });
 
+                        // Decrypting the received message with HTK
                         String testMessageReceived = decrypt(encryptedMessage, HTK);
 
-                        if (testMessageToSend.equals(testMessageReceived)) {
+                        // Checking the received encrypted message for authentication purpose
+                        if (testMessageReceived.equals(testMessageToSend+"SUCCESS")) {
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -276,11 +263,8 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
                         result = isoDep.transceive(commandAPDU);
                         // ************************************************************************************************************************************* //
 
-
-//                        String bluetoothAddress = parseBluetoothAddress(result);
-//                        Log.d("BLUETOOTH ADDRESS OF HCE CARD: ",bluetoothAddress);
-//                        initiateBluetoothConnection(bluetoothAddress);
-                        Log.d("Bluetooth initiated : ",Arrays.toString(result));
+                        deviceName = decrypt(result,HTK);
+                        Log.d("Remote Device Name: ",deviceName);
 
                     }
 

@@ -1,4 +1,4 @@
-package com.example.idsign;
+package com.example.idsign.Utilities;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
