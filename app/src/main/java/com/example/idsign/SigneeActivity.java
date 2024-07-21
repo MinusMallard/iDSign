@@ -57,19 +57,15 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
     RecyclerView recyclerView;
     List<Task> taskList;
     TaskAdapter taskAdapter;
-    private static final UUID MY_UUID = UUID.fromString("00001111-0000-1000-8000-00825F9B34FB");
-    private BluetoothAdapter bluetoothAdapter;
-    private static final int REQUEST_ENABLE_BT = 1;
-    private static final int REQUEST_PERMISSIONS = 2;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_signee);
-        recyclerView = findViewById(R.id.recyclerViewSignee);
 
+        // Handling Recycler View
+        recyclerView = findViewById(R.id.recyclerViewSignee);
         taskList = new ArrayList<>();
         taskList.add(new Task("Device registered with the PKG"));
         taskList.add(new Task("Temporary Keys Generated"));
@@ -78,13 +74,9 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
         taskList.add(new Task("Exchanged Encrypted Messages With Each Other"));
         taskList.add(new Task("Mutual Authentication Completed Successfully"));
 
-
-        Log.d("Please WORK", "Reader mode");
-
+        // Fetching Text View to set the default identity of Signee
         TextView defaultSigneeId = findViewById(R.id.emailID);
-
         defaultSigneeId.setText("Default EmailID: " + IDd);
-
 
         // Generating Signee App Key Pair
         try {
@@ -97,6 +89,7 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
             throw new RuntimeException(e);
         }
 
+        // Handling NFC Reader Mode
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(this);
         adapter.enableReaderMode(
                 this,
@@ -150,14 +143,11 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
         });
         IsoDep isoDep = IsoDep.get(tag);
 
-        Log.d("FOUND IT FINALLY 2", "TAG FOUND");
-
         if (isoDep != null) {
-            Log.d("FOUND IT FINALLY 3", "TAG FOUND");
             try {
-                Log.d("FOUND IT FINALLY 4", "TAG FOUND");
+
                 isoDep.connect();
-                Log.d("FOUND IT FINALLY 5", "TAG FOUND");
+
                 // ************************* 1st COMMAND APDU -> SELECT AID whether he matches with the application id or not ************************** //
                 byte[] result = isoDep.transceive(Utils.SELECT_APDU);
                 // ************************************************************************************************************************************* //
@@ -287,9 +277,9 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
                         // ************************************************************************************************************************************* //
 
 
-                        String bluetoothAddress = parseBluetoothAddress(result);
-                        Log.d("BLUETOOTH ADDRESS OF HCE CARD: ",bluetoothAddress);
-                        initiateBluetoothConnection(bluetoothAddress);
+//                        String bluetoothAddress = parseBluetoothAddress(result);
+//                        Log.d("BLUETOOTH ADDRESS OF HCE CARD: ",bluetoothAddress);
+//                        initiateBluetoothConnection(bluetoothAddress);
                         Log.d("Bluetooth initiated : ",Arrays.toString(result));
 
                     }
@@ -308,97 +298,6 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
         }
     }
 
-    private String parseBluetoothAddress(byte[] result) {
-        return String.format("%02X:%02X:%02X:%02X:%02X:%02X", result[0], result[1], result[2], result[3], result[4], result[5]);
-    }
-
-    private void initiateBluetoothConnection(String bluetoothAddress) {
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        BluetoothDevice device = bluetoothAdapter.getRemoteDevice(bluetoothAddress);
-        checkAndRequestPermissions();
-        Log.d("Inside Bluetooth SOCKET","before thread starts");
-        new Thread(() -> {
-            BluetoothSocket socket = null;
-            Log.d("Inside Bluetooth SOCKET","after thread starts");
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    Log.d("Inside Bluetooth SOCKET","BUILD VERSION");
-                    if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
-                        Log.d("Inside Bluetooth SOCKET","starting");
-                        socket = device.createRfcommSocketToServiceRecord(MY_UUID);
-                        Log.d("Inside Bluetooth SOCKET","middle");
-                        socket.connect();
-                        Log.d("Inside Bluetooth SOCKET","YESSSSSSSSSSS");
-                        Toast.makeText(this, "CAN NOW SEND AND RECEIVE", Toast.LENGTH_LONG).show();
-                        Log.d("Inside Bluetooth SOCKET","YESSSSSSSSSSS");
-
-                        // Connection established, ready to send/receive data
-                    } else {
-                        Log.e("BLUETOOTH PERMISSION NOT GRANTED", "Bluetooth connect permission not granted");
-                    }
-                } else {
-                    socket = device.createRfcommSocketToServiceRecord(MY_UUID);
-                    socket.connect();
-                    Log.d("Inside Bluetooth SOCKET","YESSSSSSSSSSS");
-                    Toast.makeText(this, "CAN NOW SEND AND RECEIVE", Toast.LENGTH_LONG).show();
-                    Log.d("Inside Bluetooth SOCKET","YESSSSSSSSSSS");
-                    // Connection established, ready to send/receive data
-                }
-            } catch (IOException e) {
-                Log.d("Inside Bluetooth SOCKET","there is an exception");
-                e.printStackTrace();
-            }
-        }).start();
-    }
-
-    private void checkAndRequestPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-
-                ActivityCompat.requestPermissions(this,
-                        new String[]{
-                                Manifest.permission.BLUETOOTH,
-                                Manifest.permission.BLUETOOTH_ADMIN,
-                                Manifest.permission.BLUETOOTH_SCAN,
-                                Manifest.permission.BLUETOOTH_CONNECT,
-                        },
-                        REQUEST_PERMISSIONS);
-            }
-        } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH) != PackageManager.PERMISSION_GRANTED ||
-                    ContextCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED ){
-
-                ActivityCompat.requestPermissions(this,
-                        new String[]{
-                                Manifest.permission.BLUETOOTH,
-                                Manifest.permission.BLUETOOTH_ADMIN,
-                                Manifest.permission.ACCESS_FINE_LOCATION
-                        },
-                        REQUEST_PERMISSIONS);
-            }
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQUEST_PERMISSIONS) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permissions granted
-                Log.d("Inside Request Permission","YESSSSSSSSSSS");
-                Toast.makeText(this, "Permissions granted", Toast.LENGTH_SHORT).show();
-
-                // Call initiateBluetoothConnection here if the permissions are granted
-            } else {
-                // Permissions denied
-                Toast.makeText(this, "Bluetooth permissions are mandatory. Please grant the permissions.", Toast.LENGTH_LONG).show();
-                checkAndRequestPermissions(); // Request the permissions again
-            }
-        }
-    }
 
     // Encrypt a string using AES and HTK
     public static byte[] encrypt(String data, byte[] HTK) throws Exception {

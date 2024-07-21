@@ -60,21 +60,7 @@ public class MyHostApduService extends HostApduService {
         taskAdapter = new TaskAdapter(this,taskList);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(taskAdapter);
-        bluetoothAddress = getLocalBluetoothAddress();
-    }
-
-    private byte[] getLocalBluetoothAddress() {
-        BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        // String address = bluetoothAdapter.getAddress();
-        // String address = "6C:00:6B:32:C0:1A";
-        String address = "c8:9f:0c:84:04:fb";
-        Log.d("HCE CARD BLUETOOTH ADDRESS",address);
-        String[] addressParts = address.split(":");
-        byte[] addressBytes = new byte[6];
-        for (int i = 0; i < addressParts.length; i++) {
-            addressBytes[i] = (byte) Integer.parseInt(addressParts[i], 16);
-        }
-        return addressBytes;
+//        bluetoothAddress = getLocalBluetoothAddress();
     }
 
     @Override

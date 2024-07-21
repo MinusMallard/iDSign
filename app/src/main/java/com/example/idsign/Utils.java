@@ -26,14 +26,6 @@ public class Utils {
 
     public static final byte[] BLUETOOTH_REQUEST = HexStringToByteArray("7002000000");
 
-    // "UNKNOWN" status word sent in response to invalid APDU command (0x0000)
-    public static final byte[] UNKNOWN_CMD_SW = HexStringToByteArray("0000");
-
-    // ISO-DEP command HEADER for selecting an AID.
-    // Format: [Class | Instruction | Parameter 1 | Parameter 2]
-    private static final String SELECT_APDU_HEADER = "00A40400";
-
-
     public static String ByteArrayToHexString(byte[] bytes) {
         char[] hexArray = {
                 '0', '1', '2', '3', '4', '5', '6', '7',
@@ -58,26 +50,6 @@ public class Utils {
         return data;
     }
 
-    /**
-     * Build APDU for SELECT AID command. This command indicates which service a reader is
-     * interested in communicating with. See ISO 7816-4.
-     *
-     * @param aid Application ID (AID) to select
-     * @return APDU for SELECT AID command
-     */
-    public static byte[] BuildSelectApdu(String aid) {
-        // Format: [CLASS | INSTRUCTION | PARAMETER 1 | PARAMETER 2 | LENGTH | DATA]
-        return HexStringToByteArray(
-                SELECT_APDU_HEADER + String.format("%02X", aid.length() / 2) + aid
-        );
-    }
-
-    /**
-     * Utility method to concatenate two byte arrays.
-     * @param first First array
-     * @param rest Any remaining arrays
-     * @return Concatenated copy of input arrays
-     */
     public static byte[] concatArrays(byte[] first, byte[]... rest) {
         int totalLength = first.length;
         for (byte[] array : rest) {
