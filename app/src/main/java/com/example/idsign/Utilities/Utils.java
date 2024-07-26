@@ -6,6 +6,7 @@ import android.net.Uri;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.util.Log;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -15,6 +16,10 @@ import java.util.Arrays;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 
 public class Utils {
 
@@ -147,4 +152,26 @@ public class Utils {
         return null;
     }
 
+    public static String readPDFFileAsHexString(String filePath) {
+        File file = new File(filePath);
+        StringBuilder hexString = new StringBuilder();
+
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+
+            while ((bytesRead = fis.read(buffer)) != -1) {
+                for (int i = 0; i < bytesRead; i++) {
+                    hexString.append(String.format("%02x", buffer[i]));
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading file: " + e.getMessage());
+            return null;
+        }
+
+        Log.d("Inside UTILS","Doc in String with Length: "+hexString.toString().length()+" and data: "+hexString.toString());
+
+        return hexString.toString();
+    }
 }

@@ -18,6 +18,8 @@ import java.util.List;
 
 public class SignerActivity extends AppCompatActivity {
 
+    public static String signerIdentity = "signerapp@hcecard.com";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,7 +39,7 @@ public class SignerActivity extends AppCompatActivity {
 
         // Fetching TextView to show the default identity of Signer
         TextView defaultSignerId = findViewById(R.id.emailID);
-        defaultSignerId.setText("Default EmailID : signerapp@hcecard.com");
+        defaultSignerId.setText("Default EmailID : "+signerIdentity);
 
         //Calling PKG Setup to generate keys
         try {

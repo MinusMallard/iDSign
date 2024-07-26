@@ -24,6 +24,10 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.idsign.Utilities.MyHostApduService;
+import com.example.idsign.Utilities.Utils;
+import com.example.idsign.operations.SignatureCreation;
+
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -31,6 +35,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 public class SignerPage2 extends AppCompatActivity {
@@ -81,6 +86,15 @@ public class SignerPage2 extends AppCompatActivity {
         // Click listener to open the received document
         signDoc.setOnClickListener(view -> {
             if(isReceived && pathToReceivedFile!=null){
+                String docData = Utils.readPDFFileAsHexString(pathToReceivedFile);
+                SignatureCreation ob = new SignatureCreation(docData,SignerActivity.signerIdentity);
+                try {
+                    byte[] signatures = ob.signMessage(MyHostApduService.SKs);
+                } catch (NoSuchAlgorithmException e) {
+                    throw new RuntimeException(e);
+                }
+
+
 
             }else {
 
