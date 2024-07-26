@@ -34,6 +34,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import com.example.idsign.Utilities.BluetoothDeviceFoundReceiver;
+
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,7 +50,7 @@ public class SigneePage2 extends AppCompatActivity {
 
     private static final String TAG = "SigneeAPP";
     private static final UUID MY_UUID = UUID.fromString("e8e10f95-1a70-4b27-9ccf-02010264e9c8");
-    BroadcastReceiver receiver;
+    BluetoothDeviceFoundReceiver receiver;
     private BluetoothAdapter bluetoothAdapter;
     private ActivityResultLauncher<Intent> discoverableIntentLauncher;
     private ActivityResultLauncher<Intent> pickPdfLauncher;
@@ -58,6 +60,8 @@ public class SigneePage2 extends AppCompatActivity {
     private Button sendButton;
     private ProgressBar progressBar;
     private TextView progressText;
+    private String targetDeviceName;
+    private boolean isReceiverRegistered = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -185,6 +189,8 @@ public class SigneePage2 extends AppCompatActivity {
     }
 
     private void pairDevice(String deviceName) {
+        targetDeviceName = deviceName;
+
         // Making device discoverable
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 600); // 10 minutes
@@ -197,61 +203,90 @@ public class SigneePage2 extends AppCompatActivity {
             progressText.setText("Started Pairing Process");
         });
 
-        // Create a BroadcastReceiver for ACTION_FOUND
-        receiver = new BroadcastReceiver() {
-            @SuppressLint("MissingPermission")
-            public void onReceive(Context context, Intent intent) {
-                Log.d("inside Broadcast","started onReceive method");
+//        // Create a BroadcastReceiver for ACTION_FOUND
+//        receiver = new BroadcastReceiver() {
+//            @SuppressLint("MissingPermission")
+//            public void onReceive(Context context, Intent intent) {
+//                Log.d("inside Broadcast","started onReceive method");
+//
+//                runOnUiThread(()->{
+//                    // Update ProgressText
+//                    progressText.setText("Fetching Nearby Devices..");
+//                });
+//
+//                String action = intent.getAction();
+//                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
+//                    Log.d("inside Broadcast","inside if");
+//                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+//                    Log.d("inside Broadcast","receive device");
+//                    if (device != null) {
+//                        String discoverDeviceName = device.getName();
+//                        if (discoverDeviceName != null) {
+//                            Log.d("Discover Bluetooth Device", discoverDeviceName);
+//                            if (discoverDeviceName.equals(deviceName)) {
+//                                Log.d("inside Broadcast", "going to pairDevice");
+//                                // connectToBluetoothDevice(device);
+//
+//                                foundDevice = device; // Store the discovered device
+//                                isReadyToSend = true;
+//                                Log.d("inside Broadcast", "Device paired and ready to send.");
+//                                runOnUiThread(() ->{
+//                                    // Alternate Code in order to send document when the send button is clicked
+//                                    progressText.setText("Remote Device Found and Paired Up :)");
+//                                    progressBar.setVisibility(View.INVISIBLE);
+//                                    Toast.makeText(SigneePage2.this,"Device is Ready to Send the Document",Toast.LENGTH_SHORT).show();
+//                                    sendButton.setEnabled(true);
+//                                } ); // Enable the send button
+//                            }
+//                        } else {
+//                            Log.d("Discover Bluetooth Device", "Unnamed device found");
+//                        }
+//                    }
+//                }
+//
+//            }
+//        };
 
-                runOnUiThread(()->{
-                    // Update ProgressText
-                    progressText.setText("Fetching Nearby Devices..");
-                });
+        Log.d(TAG,"Starting Braodcast Receiver");
+        receiver = new BluetoothDeviceFoundReceiver();
+        receiver.setHceReaderActivity(this);
+        receiver.setTargetDeviceName(targetDeviceName);
 
-                String action = intent.getAction();
-                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-                    Log.d("inside Broadcast","inside if");
-                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-                    Log.d("inside Broadcast","receive device");
-                    if (device != null) {
-                        String discoverDeviceName = device.getName();
-                        if (discoverDeviceName != null) {
-                            Log.d("Discover Bluetooth Device", discoverDeviceName);
-                            if (discoverDeviceName.equals(deviceName)) {
-                                Log.d("inside Broadcast", "going to pairDevice");
-                                // connectToBluetoothDevice(device);
+//        // These lines should be placed below BroadCast Receiver so that after discovering first device it again run these lines and after discover more devices
+//        // Start device discovery
+//        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+//        registerReceiver(receiver, filter);
 
-                                foundDevice = device; // Store the discovered device
-                                isReadyToSend = true;
-                                Log.d("inside Broadcast", "Device paired and ready to send.");
-                                runOnUiThread(() ->{
-                                    // Alternate Code in order to send document when the send button is clicked
-                                    progressText.setText("Remote Device Found and Paired Up :)");
-                                    progressBar.setVisibility(View.INVISIBLE);
-                                    Toast.makeText(SigneePage2.this,"Device is Ready to Send the Document",Toast.LENGTH_SHORT).show();
-                                    sendButton.setEnabled(true);
-                                } ); // Enable the send button
-                            }
-                        } else {
-                            Log.d("Discover Bluetooth Device", "Unnamed device found");
-                        }
-                    }
-                }
+    }
 
-            }
-        };
+    @SuppressLint("MissingPermission")
+    public void onDeviceFound(BluetoothDevice device) {
+        Log.d(TAG, "Device found: " + device.getName());
+//        bluetoothAdapter.cancelDiscovery();
+        unregisterReceiver(receiver);
+        isReceiverRegistered = false;
 
-        // These lines should be placed below BroadCast Receiver so that after discovering first device it again run these lines and after discover more devices
-        // Start device discovery
-        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-        registerReceiver(receiver, filter);
-
+        foundDevice = device; // Store the discovered device
+        isReadyToSend = true;
+        Log.d("inside Broadcast", "Device paired and ready to send.");
+        runOnUiThread(() ->{
+            // Alternate Code in order to send document when the send button is clicked
+            progressText.setText("Device found: " + targetDeviceName);
+            progressBar.setVisibility(View.INVISIBLE);
+            Toast.makeText(SigneePage2.this,"Device is Ready to Send the Document",Toast.LENGTH_SHORT).show();
+            sendButton.setEnabled(true);
+        } ); // Enable the send button
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        registerReceiver(receiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+//        registerReceiver(receiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+        if (!isReceiverRegistered && receiver != null && targetDeviceName != null) {
+            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+            registerReceiver(receiver, filter);
+            isReceiverRegistered = true; // Mark the receiver as registered
+        }
     }
 
     private void connectToBluetoothDevice(BluetoothDevice device) {
@@ -391,7 +426,9 @@ public class SigneePage2 extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        unregisterReceiver(receiver);
+        if (isReceiverRegistered && receiver != null) { // Unregister only if registered
+            unregisterReceiver(receiver);
+        }
     }
 
 }

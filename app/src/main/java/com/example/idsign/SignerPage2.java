@@ -43,7 +43,7 @@ public class SignerPage2 extends AppCompatActivity {
     private AcceptThread acceptThread;
     TextView progressText;
     Boolean isReceived = false;
-    Button openDoc;
+    Button openDoc,signDoc;
     String pathToReceivedFile;
 
     @Override
@@ -58,6 +58,9 @@ public class SignerPage2 extends AppCompatActivity {
         // Fetching Open Document button
         openDoc = findViewById(R.id.openDoc);
 
+        // Fetching Sign Document button
+        signDoc = findViewById(R.id.signDoc);
+
         // Click listener to open the received document
         openDoc.setOnClickListener(view -> {
             if(isReceived && pathToReceivedFile!=null){
@@ -71,6 +74,15 @@ public class SignerPage2 extends AppCompatActivity {
                 startActivity(intent);
             }else {
                 Toast.makeText(this, "No path to the file received", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Click listener to open the received document
+        signDoc.setOnClickListener(view -> {
+            if(isReceived && pathToReceivedFile!=null){
+
+            }else {
+
             }
         });
 
@@ -219,6 +231,7 @@ public class SignerPage2 extends AppCompatActivity {
                     runOnUiThread(() -> {
                         isReceived = true;
                         openDoc.setEnabled(true);
+                        signDoc.setEnabled(true);
                         progressText.setText("Document Received");
                         Toast.makeText(SignerPage2.this, "File received in Downloads Folder", Toast.LENGTH_LONG).show();
                     });

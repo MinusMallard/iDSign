@@ -56,11 +56,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Activities are not meant to be used as receivers -->
+        <!--
         <receiver android:name=".SigneePage2" android:exported="true">
             <intent-filter>
                 <action android:name="android.bluetooth.device.action.FOUND" />
             </intent-filter>
         </receiver>
+        -->
 
         <service
             android:name=".Utilities.MyHostApduService"
