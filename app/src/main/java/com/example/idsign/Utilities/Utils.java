@@ -1,8 +1,20 @@
 package com.example.idsign.Utilities;
 
+import android.content.Context;
+import android.database.Cursor;
+import android.net.Uri;
+import android.os.Environment;
+import android.provider.DocumentsContract;
+import android.provider.MediaStore;
+
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+
+import javax.crypto.Cipher;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 
 public class Utils {
 
@@ -67,6 +79,72 @@ public class Utils {
     public static byte[] sha256(String data) throws NoSuchAlgorithmException {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
         return digest.digest(data.getBytes());
+    }
+
+    // Decrypt a byte array using AES and HTK
+    public static String decrypt(byte[] encryptedData, byte[] HTK) throws Exception {
+        SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding", "BC");
+        cipher.init(Cipher.DECRYPT_MODE, secretKey);
+        byte[] decryptedData = cipher.doFinal(encryptedData);
+        return new String(decryptedData, StandardCharsets.UTF_8);
+    }
+
+    // Encrypt a string using AES and HTK
+    public static byte[] encrypt(String data, byte[] HTK) throws Exception {
+        SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128, to use AES256 just replace the value 16 with 32
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding", "BC");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+        return cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
+    }
+
+    // Method to return Absolute path of the document from URI
+    public static String getPathFromUri(Context context, Uri uri) {
+        String path = null;
+
+        // Check if the URI is a content URI
+        if ("content".equalsIgnoreCase(uri.getScheme())) {
+            if (DocumentsContract.isDocumentUri(context, uri)) {
+                // Handle document URIs
+                String documentId = DocumentsContract.getDocumentId(uri);
+                if (documentId.startsWith("raw:")) {
+                    path = documentId.replaceFirst("raw:", "");
+                } else {
+                    String[] split = documentId.split(":");
+                    String type = split[0];
+                    if ("primary".equalsIgnoreCase(type)) {
+                        // Primary storage
+                        path = Environment.getExternalStorageDirectory() + "/" + split[1];
+                    } else {
+                        // Handle other types if necessary
+                        path = getFilePathFromContentUri(context, uri);
+                    }
+                }
+            } else {
+                // For other content URIs
+                path = getFilePathFromContentUri(context, uri);
+            }
+        } else if ("file".equalsIgnoreCase(uri.getScheme())) {
+            // Direct file URI
+            path = uri.getPath();
+        }
+        return path;
+    }
+
+    private static String getFilePathFromContentUri(Context context, Uri uri) {
+        String[] projection = {MediaStore.Files.FileColumns.DATA};
+        Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null);
+        if (cursor != null) {
+            try {
+                int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA);
+                if (cursor.moveToFirst()) {
+                    return cursor.getString(columnIndex);
+                }
+            } finally {
+                cursor.close();
+            }
+        }
+        return null;
     }
 
 }

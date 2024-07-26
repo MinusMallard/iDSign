@@ -35,6 +35,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
 import com.example.idsign.Utilities.BluetoothDeviceFoundReceiver;
+import com.example.idsign.Utilities.Utils;
 
 import java.io.DataOutputStream;
 import java.io.File;
@@ -62,6 +63,7 @@ public class SigneePage2 extends AppCompatActivity {
     private TextView progressText;
     private String targetDeviceName;
     private boolean isReceiverRegistered = false;
+    private ConnectThread connectThread;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,7 +121,7 @@ public class SigneePage2 extends AppCompatActivity {
                         if (data != null) {
                             Uri uri = data.getData();
                             if (uri != null) {
-                                pdfPath = getPathFromUri(this,uri);
+                                pdfPath = Utils.getPathFromUri(this,uri);
                                 textView.setText("Doc Path: "+pdfPath);
                                 Log.d("MainActivity", "Selected PDF Path: " + pdfPath);
                                 Toast.makeText(this, "Selected PDF Path: " + pdfPath, Toast.LENGTH_SHORT).show();
@@ -128,7 +130,6 @@ public class SigneePage2 extends AppCompatActivity {
                     }
                 }
         );
-
         pairDevice(SigneeActivity.deviceName);
 
     }
@@ -138,54 +139,6 @@ public class SigneePage2 extends AppCompatActivity {
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("application/pdf");
         pickPdfLauncher.launch(intent);
-    }
-
-    private String getPathFromUri(Context context, Uri uri) {
-        String path = null;
-
-        // Check if the URI is a content URI
-        if ("content".equalsIgnoreCase(uri.getScheme())) {
-            if (DocumentsContract.isDocumentUri(context, uri)) {
-                // Handle document URIs
-                String documentId = DocumentsContract.getDocumentId(uri);
-                if (documentId.startsWith("raw:")) {
-                    path = documentId.replaceFirst("raw:", "");
-                } else {
-                    String[] split = documentId.split(":");
-                    String type = split[0];
-                    if ("primary".equalsIgnoreCase(type)) {
-                        // Primary storage
-                        path = Environment.getExternalStorageDirectory() + "/" + split[1];
-                    } else {
-                        // Handle other types if necessary
-                        path = getFilePathFromContentUri(context, uri);
-                    }
-                }
-            } else {
-                // For other content URIs
-                path = getFilePathFromContentUri(context, uri);
-            }
-        } else if ("file".equalsIgnoreCase(uri.getScheme())) {
-            // Direct file URI
-            path = uri.getPath();
-        }
-        return path;
-    }
-
-    private String getFilePathFromContentUri(Context context, Uri uri) {
-        String[] projection = {MediaStore.Files.FileColumns.DATA};
-        Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null);
-        if (cursor != null) {
-            try {
-                int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA);
-                if (cursor.moveToFirst()) {
-                    return cursor.getString(columnIndex);
-                }
-            } finally {
-                cursor.close();
-            }
-        }
-        return null;
     }
 
     private void pairDevice(String deviceName) {
@@ -203,59 +156,10 @@ public class SigneePage2 extends AppCompatActivity {
             progressText.setText("Started Pairing Process");
         });
 
-//        // Create a BroadcastReceiver for ACTION_FOUND
-//        receiver = new BroadcastReceiver() {
-//            @SuppressLint("MissingPermission")
-//            public void onReceive(Context context, Intent intent) {
-//                Log.d("inside Broadcast","started onReceive method");
-//
-//                runOnUiThread(()->{
-//                    // Update ProgressText
-//                    progressText.setText("Fetching Nearby Devices..");
-//                });
-//
-//                String action = intent.getAction();
-//                if (BluetoothDevice.ACTION_FOUND.equals(action)) {
-//                    Log.d("inside Broadcast","inside if");
-//                    BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-//                    Log.d("inside Broadcast","receive device");
-//                    if (device != null) {
-//                        String discoverDeviceName = device.getName();
-//                        if (discoverDeviceName != null) {
-//                            Log.d("Discover Bluetooth Device", discoverDeviceName);
-//                            if (discoverDeviceName.equals(deviceName)) {
-//                                Log.d("inside Broadcast", "going to pairDevice");
-//                                // connectToBluetoothDevice(device);
-//
-//                                foundDevice = device; // Store the discovered device
-//                                isReadyToSend = true;
-//                                Log.d("inside Broadcast", "Device paired and ready to send.");
-//                                runOnUiThread(() ->{
-//                                    // Alternate Code in order to send document when the send button is clicked
-//                                    progressText.setText("Remote Device Found and Paired Up :)");
-//                                    progressBar.setVisibility(View.INVISIBLE);
-//                                    Toast.makeText(SigneePage2.this,"Device is Ready to Send the Document",Toast.LENGTH_SHORT).show();
-//                                    sendButton.setEnabled(true);
-//                                } ); // Enable the send button
-//                            }
-//                        } else {
-//                            Log.d("Discover Bluetooth Device", "Unnamed device found");
-//                        }
-//                    }
-//                }
-//
-//            }
-//        };
-
         Log.d(TAG,"Starting Braodcast Receiver");
         receiver = new BluetoothDeviceFoundReceiver();
         receiver.setHceReaderActivity(this);
         receiver.setTargetDeviceName(targetDeviceName);
-
-//        // These lines should be placed below BroadCast Receiver so that after discovering first device it again run these lines and after discover more devices
-//        // Start device discovery
-//        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-//        registerReceiver(receiver, filter);
 
     }
 
@@ -281,7 +185,7 @@ public class SigneePage2 extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-//        registerReceiver(receiver, new IntentFilter(BluetoothDevice.ACTION_FOUND));
+        // These lines should be placed below BroadCast Receiver so that after discovering first device it again run these lines and after discover more devices
         if (!isReceiverRegistered && receiver != null && targetDeviceName != null) {
             IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
             registerReceiver(receiver, filter);
@@ -291,7 +195,7 @@ public class SigneePage2 extends AppCompatActivity {
 
     private void connectToBluetoothDevice(BluetoothDevice device) {
         if (device != null) {
-            ConnectThread connectThread = new ConnectThread(device);
+            connectThread = new ConnectThread(device);
             connectThread.start();
         } else {
             Log.d(TAG, "No device selected for connection.");
@@ -339,7 +243,7 @@ public class SigneePage2 extends AppCompatActivity {
         private void manageConnectedSocketHCE_Reader(BluetoothSocket socket) {
             Log.d("Manage Connected SOcket","got inside");
 
-            AsyncTask.execute(()->{
+//            AsyncTask.execute(()->{
                 OutputStream outputStream = null;
                 FileInputStream fileInputStream = null;
                 InputStream inputStream = null;
@@ -399,27 +303,39 @@ public class SigneePage2 extends AppCompatActivity {
                         Log.d("ManageConnectedSocket HCE Reader", "Closing streams and socket");
                         if (fileInputStream != null) fileInputStream.close();
                         if (outputStream != null) outputStream.close();
+                        if(inputStream!= null) inputStream.close();
 
-                        if(foundDevice != null) {
-                            Method removeBondMethod = foundDevice.getClass().getMethod("removeBond");
-                            boolean result = (boolean) removeBondMethod.invoke(foundDevice);
-                            if (result) {
-                                Log.d(TAG, "Successfully unpaired device");
-                                runOnUiThread(() -> Toast.makeText(SigneePage2.this, "Unpaired", Toast.LENGTH_SHORT).show());
-                            } else {
-                                Log.e(TAG, "Failed to unpair device");
-                            }
-                        }
                         //if (socket != null) socket.close();
                     } catch (IOException e) {
                         e.printStackTrace();
-                    } catch (InvocationTargetException | NoSuchMethodException |
-                             IllegalAccessException e) {
-                        throw new RuntimeException(e);
                     }
                 }
-            });
+//            });
 
+        }
+        @SuppressLint("MissingPermission")
+        public void cancel() {
+            try {
+                // Unpair Device using Reflection
+                if(foundDevice != null) {
+                    Method removeBondMethod = foundDevice.getClass().getMethod("removeBond");
+                    boolean result = (boolean) removeBondMethod.invoke(foundDevice);
+                    if (result) {
+                        Log.d(TAG, "Successfully unpaired device");
+                        runOnUiThread(() -> Toast.makeText(SigneePage2.this, "Unpaired", Toast.LENGTH_SHORT).show());
+                    } else {
+                        Log.e(TAG, "Failed to unpair device");
+                    }
+                }
+
+                Log.d("inside RUN IF","socket Cancelled");
+                socket.close();
+                Log.d("inside RUN IF","socket closed");
+            } catch (IOException e) {
+                Log.e(TAG, "Could not close the connect socket", e);
+            } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e){
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -428,6 +344,10 @@ public class SigneePage2 extends AppCompatActivity {
         super.onDestroy();
         if (isReceiverRegistered && receiver != null) { // Unregister only if registered
             unregisterReceiver(receiver);
+            Log.d("Unregister Receiver","Successfully Unregistered");
+        }
+        if(connectThread!=null){
+            connectThread.cancel();
         }
     }
 

@@ -43,7 +43,6 @@ public class MyHostApduService extends HostApduService {
     String IDs = "signerapp@hcecard.com";
 
 
-
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
@@ -162,9 +161,9 @@ public class MyHostApduService extends HostApduService {
             String testMessage;
             try {
                 Log.d("HOST APDU SERVICE 7 ","Going for decryption");
-                testMessage = decrypt(encryptedMessage, HTK);
+                testMessage = Utils.decrypt(encryptedMessage, HTK);
                 testMessage = testMessage+"SUCCESS";
-                encryptedMessage = encrypt(testMessage, HTK);
+                encryptedMessage = Utils.encrypt(testMessage, HTK);
                 Log.d("HOST APDU SERVICE 8 Decryption completed",testMessage);
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -180,7 +179,7 @@ public class MyHostApduService extends HostApduService {
         }else if (commandApdu[0] == (byte) 0x70 && commandApdu[1] == (byte) 0x02){
 
             try {
-                responseAPDU = encrypt(deviceName,HTK);
+                responseAPDU = Utils.encrypt(deviceName,HTK);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -209,23 +208,6 @@ public class MyHostApduService extends HostApduService {
         byte[] HTK = new byte[16]; // Here Length will be 128 bits as in this project I am going to use AES 128 which will give enough level of security and will be faster than AES256
         hkdf.generateBytes(HTK, 0, HTK.length);
         return HTK;
-    }
-
-    // Decrypt a byte array using AES and HTK
-    public static String decrypt(byte[] encryptedData, byte[] HTK) throws Exception {
-        SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding", "BC");
-        cipher.init(Cipher.DECRYPT_MODE, secretKey);
-        byte[] decryptedData = cipher.doFinal(encryptedData);
-        return new String(decryptedData, StandardCharsets.UTF_8);
-    }
-
-    // Encrypt a string using AES and HTK
-    public static byte[] encrypt(String data, byte[] HTK) throws Exception {
-        SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128, to use AES256 just replace the value 16 with 32
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding", "BC");
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-        return cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
     }
 
 

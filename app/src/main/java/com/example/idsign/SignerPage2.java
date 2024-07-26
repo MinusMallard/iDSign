@@ -46,6 +46,7 @@ public class SignerPage2 extends AppCompatActivity {
     Button openDoc,signDoc;
     String pathToReceivedFile;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -114,6 +115,7 @@ public class SignerPage2 extends AppCompatActivity {
 
     private class AcceptThread extends Thread {
         private final BluetoothServerSocket serverSocket;
+        private BluetoothSocket socket;
 
         @SuppressLint("MissingPermission")
         public AcceptThread() {
@@ -132,7 +134,7 @@ public class SignerPage2 extends AppCompatActivity {
         public void run() {
             Log.d("inside RUN","Just Started");
             BluetoothSocket socket = null;
-            while (true) {
+            while (!Thread.interrupted()) { // Keep running until interrupted
                 try {
                     Log.d("inside RUN","Socket yet to accept");
                     socket = serverSocket.accept();
@@ -152,15 +154,16 @@ public class SignerPage2 extends AppCompatActivity {
                     } catch (Exception e) {
                         Log.e(TAG, "Could not close the connect socket", e);
                     }
-                    break;
+                    //break;
                 }
             }
+            Log.d("Accept thread run","Thread interrupted out of while loop");
         }
 
         private void manageConnectedSocketHCE_Card(BluetoothSocket socket) {
             Log.d("inside ManageConnectedSocket","Just Started");
 
-            AsyncTask.execute(()->{
+            // AsyncTask.execute(()->{
                 InputStream inputStream = null;
                 FileOutputStream fileOutputStream = null;
                 OutputStream outputStream = null;
@@ -244,43 +247,62 @@ public class SignerPage2 extends AppCompatActivity {
                         if (fileOutputStream != null) fileOutputStream.close();
                         if (outputStream != null) outputStream.close();
 
-                        // Unpair using reflection
-                        if (socket != null && socket.getRemoteDevice() != null) {
-                            try {
-                                Method removeBondMethod = socket.getRemoteDevice().getClass().getMethod("removeBond");
-
-                                boolean result = false;
-                                Object returnValue = removeBondMethod.invoke(socket.getRemoteDevice());
-                                if (returnValue instanceof Boolean) {
-                                    result = (Boolean) returnValue;
-                                }
-
-                                if (result) {
-                                    Log.d(TAG, "Successfully unpaired device from receiver");
-                                    runOnUiThread(() -> {
-                                        Toast.makeText(SignerPage2.this, "Unpaired", Toast.LENGTH_SHORT).show();
-                                    });
-                                } else {
-                                    Log.e(TAG, "Failed to unpair device from receiver");
-                                }
-                            } catch (NoSuchMethodException e) {
-                                Log.e(TAG, "Method removeBond not found (receiver)", e);
-                            } catch (Exception e) {
-                                Log.e(TAG, "Error occurred while unpairing (receiver)", e);
-                            }
-                        } else {
-                            Log.e(TAG, "Cannot unpair: socket or remote device is null (receiver)");
-                        }
-
-                        if (socket != null) socket.close();
-
+//                         if (socket != null) socket.close();
                         Log.d("Finally Block", "Closed all streams and socket");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 }
-            });
+//            });
+            Log.d("Manage Connected Socket", "out of Async task");
+        }
 
+        @SuppressLint("MissingPermission")
+        public void cancel() {
+            try {
+                // Unpair using reflection
+                if (socket != null && socket.getRemoteDevice() != null) {
+                    try {
+                        Method removeBondMethod = socket.getRemoteDevice().getClass().getMethod("removeBond");
+
+                        boolean result = false;
+                        Object returnValue = removeBondMethod.invoke(socket.getRemoteDevice());
+                        if (returnValue instanceof Boolean) {
+                            result = (Boolean) returnValue;
+                        }
+
+                        if (result) {
+                            Log.d(TAG, "Successfully unpaired device from receiver");
+                            runOnUiThread(() -> {
+                                Toast.makeText(SignerPage2.this, "Unpaired", Toast.LENGTH_SHORT).show();
+                            });
+                        } else {
+                            Log.e(TAG, "Failed to unpair device from receiver");
+                        }
+                    } catch (NoSuchMethodException e) {
+                        Log.e(TAG, "Method removeBond not found (receiver)", e);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error occurred while unpairing (receiver)", e);
+                    }
+                } else {
+                    Log.e(TAG, "Cannot unpair: socket or remote device is null (receiver)");
+                }
+
+                Log.d("inside RUN IF","serverSocket Cancelled");
+                serverSocket.close();
+                Log.d("inside RUN IF","serverSocket closed");
+            } catch (IOException e) {
+                Log.e(TAG, "Could not close the connect socket", e);
+            }
         }
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (acceptThread!=null){
+            acceptThread.cancel();
+        }
+    }
+
 }
