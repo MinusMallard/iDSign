@@ -38,7 +38,8 @@ public class MyHostApduService extends HostApduService {
     private TaskAdapter taskAdapter;
     public static RecyclerView recyclerView;
     private String deviceName ;
-    private byte[] responseAPDU,HTK;
+    private byte[] responseAPDU;
+    public static byte[] HTK;
     // Signer's Identity
     String IDs = "signerapp@hcecard.com";
 

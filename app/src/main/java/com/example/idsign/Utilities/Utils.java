@@ -89,7 +89,7 @@ public class Utils {
     // Decrypt a byte array using AES and HTK
     public static String decrypt(byte[] encryptedData, byte[] HTK) throws Exception {
         SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding", "BC");
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
         cipher.init(Cipher.DECRYPT_MODE, secretKey);
         byte[] decryptedData = cipher.doFinal(encryptedData);
         return new String(decryptedData, StandardCharsets.UTF_8);
@@ -98,9 +98,25 @@ public class Utils {
     // Encrypt a string using AES and HTK
     public static byte[] encrypt(String data, byte[] HTK) throws Exception {
         SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128, to use AES256 just replace the value 16 with 32
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding", "BC");
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
         return cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
+    }
+
+    // Method to Encrypt Byte Array
+    public static byte[] encryptByteArray(byte[] data, byte[] HTK) throws Exception {
+        SecretKey secretKey = new SecretKeySpec(HTK, "AES"); // No provider specified
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding"); // No provider specified
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+        return cipher.doFinal(data);
+    }
+
+    // Method to Decrypt Byte Array
+    public static byte[] decryptByteArray(byte[] encryptedData, byte[] HTK) throws Exception {
+        SecretKey secretKey = new SecretKeySpec(HTK, "AES"); // No provider specified
+        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding"); // No provider specified
+        cipher.init(Cipher.DECRYPT_MODE, secretKey);
+        return cipher.doFinal(encryptedData);
     }
 
     // Method to return Absolute path of the document from URI
@@ -152,26 +168,43 @@ public class Utils {
         return null;
     }
 
-    public static String readPDFFileAsHexString(String filePath) {
-        File file = new File(filePath);
-        StringBuilder hexString = new StringBuilder();
+//    public static String readPDFFileAsHexString(String filePath) {
+//        File file = new File(filePath);
+//        StringBuilder hexString = new StringBuilder();
+//
+//        try (FileInputStream fis = new FileInputStream(file)) {
+//            byte[] buffer = new byte[1024];
+//            int bytesRead;
+//
+//            while ((bytesRead = fis.read(buffer)) != -1) {
+//                for (int i = 0; i < bytesRead; i++) {
+//                    hexString.append(String.format("%02x", buffer[i]));
+//                }
+//            }
+//        } catch (IOException e) {
+//            System.err.println("Error reading file: " + e.getMessage());
+//            return null;
+//        }
+//
+//        Log.d("Inside UTILS","Doc in String with Length: "+hexString.toString().length()+" and data: "+hexString.toString());
+//
+//        return hexString.toString();
+//    }
 
-        try (FileInputStream fis = new FileInputStream(file)) {
+    public static byte[] calculateHash(String filePath) {
+        try (FileInputStream fis = new FileInputStream(filePath)) {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] buffer = new byte[1024];
             int bytesRead;
 
             while ((bytesRead = fis.read(buffer)) != -1) {
-                for (int i = 0; i < bytesRead; i++) {
-                    hexString.append(String.format("%02x", buffer[i]));
-                }
+                digest.update(buffer, 0, bytesRead);
             }
-        } catch (IOException e) {
-            System.err.println("Error reading file: " + e.getMessage());
+
+            return digest.digest();
+        } catch (IOException | NoSuchAlgorithmException e) {
+            e.printStackTrace();
             return null;
         }
-
-        Log.d("Inside UTILS","Doc in String with Length: "+hexString.toString().length()+" and data: "+hexString.toString());
-
-        return hexString.toString();
     }
 }

@@ -1,5 +1,7 @@
 package com.example.idsign.operations;
 
+import android.util.Log;
+
 import com.example.idsign.Utilities.PKG_Setup;
 import com.example.idsign.Utilities.Utils;
 
@@ -7,24 +9,26 @@ import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
 
 import it.unisa.dia.gas.jpbc.Element;
-import it.unisa.dia.gas.jpbc.Pairing;
 
 public class SignatureCreation {
 
-    String docData,identity;
+    String identity;
+    byte[] messageHash;
 
 
-    public SignatureCreation(String docData, String identity){
-        this.docData = docData;
+    public SignatureCreation(byte[] messageHash, String identity){
+        this.messageHash = messageHash;
         this.identity = identity;
     }
 
     public byte[] signMessage(Element SKs) throws NoSuchAlgorithmException {
         // Hash the message
-        byte[] messageHash = Utils.sha256(docData);
+//        byte[] messageHash = Utils.sha256(docData);
+        Log.d("Signature Creation","Hash of the message generated");
 
         // Hash of the identity
         byte[] identityHash = Utils.sha256(identity);
+        Log.d("Signature Creation","Hash of the identity generated");
 
         Element k = PKG_Setup.pairing.getZr().newRandomElement().getImmutable();
         Element P1 = PKG_Setup.pairing.getG1().newRandomElement().getImmutable();

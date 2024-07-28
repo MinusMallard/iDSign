@@ -46,6 +46,7 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
     List<Task> taskList;
     TaskAdapter taskAdapter;
     public static String deviceName;
+    public static byte[] HTK;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -200,7 +201,7 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
                     System.arraycopy(SSd_PairingResult_bytes, 0, SSd, y_EKs_bytes.length, SSd_PairingResult_bytes.length);
 
                     // Generating HTK = HKDF(SSd,Ppub)
-                    byte[] HTK = generateHTK(SSd, PKG_Setup.Ppub.toBytes());
+                    HTK = generateHTK(SSd, PKG_Setup.Ppub.toBytes());
 
                     runOnUiThread(new Runnable() {
                         @Override
@@ -213,7 +214,7 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
 
                     // Generating random TEST MESSAGE and encrypting it to check whether both parties have computed same Handshake Traffic Key
                     String testMessageToSend = generateRandomString(20);
-                    byte[] encryptedMessage = encrypt(testMessageToSend, HTK);
+                    byte[] encryptedMessage = Utils.encrypt(testMessageToSend, HTK);
                     byte encryptedMessageLength = (byte) encryptedMessage.length;
 
                     Log.d("FOUND IT FINALLY 12", "Message encrypted successfully");
@@ -245,7 +246,7 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
                         });
 
                         // Decrypting the received message with HTK
-                        String testMessageReceived = decrypt(encryptedMessage, HTK);
+                        String testMessageReceived = Utils.decrypt(encryptedMessage, HTK);
 
                         // Checking the received encrypted message for authentication purpose
                         if (testMessageReceived.equals(testMessageToSend+"SUCCESS")) {
@@ -264,7 +265,8 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
                         result = isoDep.transceive(commandAPDU);
                         // ************************************************************************************************************************************* //
 
-                        deviceName = decrypt(result,HTK);
+                        // Remote device bluetooth name received
+                        deviceName = Utils.decrypt(result,HTK);
                         Log.d("Remote Device Name: ",deviceName);
 
                         runOnUiThread(()->{
@@ -289,13 +291,13 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
     }
 
 
-    // Encrypt a string using AES and HTK
-    public static byte[] encrypt(String data, byte[] HTK) throws Exception {
-        SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128, to use AES256 just replace the value 16 with 32
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding", "BC");
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-        return cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
-    }
+//    // Encrypt a string using AES and HTK
+//    public static byte[] encrypt(String data, byte[] HTK) throws Exception {
+//        SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128, to use AES256 just replace the value 16 with 32
+//        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding", "BC");
+//        cipher.init(Cipher.ENCRYPT_MODE, secretKey);
+//        return cipher.doFinal(data.getBytes(StandardCharsets.UTF_8));
+//    }
 
     // Generate Handshake Traffic Key (HTK) using HKDF
     public static byte[] generateHTK(byte[] SS_D, byte[] P_Pub_bytes) {
@@ -309,14 +311,14 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
         return HTK;
     }
 
-    // Decrypt a byte array using AES and HTK
-    public static String decrypt(byte[] encryptedData, byte[] HTK) throws Exception {
-        SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128
-        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding", "BC");
-        cipher.init(Cipher.DECRYPT_MODE, secretKey);
-        byte[] decryptedData = cipher.doFinal(encryptedData);
-        return new String(decryptedData, StandardCharsets.UTF_8);
-    }
+//    // Decrypt a byte array using AES and HTK
+//    public static String decrypt(byte[] encryptedData, byte[] HTK) throws Exception {
+//        SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128
+//        Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding", "BC");
+//        cipher.init(Cipher.DECRYPT_MODE, secretKey);
+//        byte[] decryptedData = cipher.doFinal(encryptedData);
+//        return new String(decryptedData, StandardCharsets.UTF_8);
+//    }
 
     public static String generateRandomString(int length) {
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

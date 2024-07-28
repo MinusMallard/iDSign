@@ -13,7 +13,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginTop="220dp"
+        android:layout_marginTop="150dp"
         android:text="Document Yet to be received"
         android:textSize="20dp"
         android:id="@+id/progressText"/>
@@ -24,11 +24,13 @@
         app:layout_constraintTop_toBottomOf="@id/progressText"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginTop="100dp"
+        android:layout_marginTop="60dp"
+        android:textSize="20dp"
         android:text="Open Document"
         android:enabled="false"
         android:id="@+id/openDoc"
-        android:padding="30dp"/>
+        android:paddingHorizontal="70dp"
+        android:paddingVertical="20dp"/>
 
     <Button
         android:layout_width="wrap_content"
@@ -36,11 +38,28 @@
         app:layout_constraintTop_toBottomOf="@id/openDoc"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginTop="70dp"
+        android:layout_marginTop="60dp"
         android:text="Sign Document"
+        android:textSize="20dp"
         android:enabled="false"
         android:id="@+id/signDoc"
-        android:padding="30dp"/>
+        android:paddingHorizontal="70dp"
+        android:paddingVertical="20dp"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/openDoc"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="60dp"
+        android:textSize="20dp"
+        android:text="Send Signatures"
+        android:paddingHorizontal="70dp"
+        android:paddingVertical="20dp"
+        android:visibility="invisible"
+        android:id="@+id/sendSign"
+        />
 
 
 

@@ -3,14 +3,17 @@ package com.example.idsign;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -19,10 +22,8 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.core.content.FileProvider;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 import com.example.idsign.Utilities.MyHostApduService;
 import com.example.idsign.Utilities.Utils;
@@ -34,8 +35,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.UUID;
 
 public class SignerPage2 extends AppCompatActivity {
@@ -46,10 +49,13 @@ public class SignerPage2 extends AppCompatActivity {
     private ActivityResultLauncher<Intent> discoverableIntentLauncher;
     private BluetoothAdapter bluetoothAdapter;
     private AcceptThread acceptThread;
+    private ConnectThread connectThread;
     TextView progressText;
     Boolean isReceived = false;
-    Button openDoc,signDoc;
+    Button openDoc,signDoc,sendSign;
     String pathToReceivedFile;
+    BluetoothDevice remoteDeviceName;
+    private byte[] encryptedSignatures;
 
 
     @Override
@@ -66,6 +72,7 @@ public class SignerPage2 extends AppCompatActivity {
 
         // Fetching Sign Document button
         signDoc = findViewById(R.id.signDoc);
+        sendSign = findViewById(R.id.sendSign);
 
         // Click listener to open the received document
         openDoc.setOnClickListener(view -> {
@@ -86,20 +93,35 @@ public class SignerPage2 extends AppCompatActivity {
         // Click listener to open the received document
         signDoc.setOnClickListener(view -> {
             if(isReceived && pathToReceivedFile!=null){
-                String docData = Utils.readPDFFileAsHexString(pathToReceivedFile);
-                SignatureCreation ob = new SignatureCreation(docData,SignerActivity.signerIdentity);
+//                String docData = Utils.readPDFFileAsHexString(pathToReceivedFile);
+
                 try {
+                    Log.d(TAG,"Going for Signatures");
+                    byte[] fileHash = Utils.calculateHash(pathToReceivedFile);
+                    SignatureCreation ob = new SignatureCreation(fileHash,SignerActivity.signerIdentity);
                     byte[] signatures = ob.signMessage(MyHostApduService.SKs);
-                } catch (NoSuchAlgorithmException e) {
+                    Log.d(TAG,"Signatures Received, length : "+signatures.length);
+                    Log.d(TAG,"Original Signatures : "+ Arrays.toString(signatures));
+                    encryptedSignatures = Utils.encryptByteArray(signatures, MyHostApduService.HTK);
+                    Log.d(TAG,"Encrypted Signatures length : "+ encryptedSignatures.length);
+                    Log.d(TAG,"Encrypted Signatures : "+ Arrays.toString(encryptedSignatures));
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-
-
-
+                Toast.makeText(this,"Signatures Generated",Toast.LENGTH_SHORT).show();
+                signDoc.setVisibility(View.INVISIBLE);
+                sendSign.setVisibility(View.VISIBLE);
+                acceptThread.cancel();
             }else {
-
+                Toast.makeText(this,"Document Not Received Yet",Toast.LENGTH_SHORT).show();
             }
         });
+
+        sendSign.setOnClickListener(view -> {
+            connectToBluetoothDevice(remoteDeviceName);
+        });
+
+
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -127,6 +149,15 @@ public class SignerPage2 extends AppCompatActivity {
 
     }
 
+    private void connectToBluetoothDevice(BluetoothDevice device) {
+        if (device != null) {
+            connectThread = new ConnectThread(device);
+            connectThread.start();
+        } else {
+            Log.d(TAG, "No device selected for connection.");
+        }
+    }
+
     private class AcceptThread extends Thread {
         private final BluetoothServerSocket serverSocket;
         private BluetoothSocket socket;
@@ -147,7 +178,7 @@ public class SignerPage2 extends AppCompatActivity {
 
         public void run() {
             Log.d("inside RUN","Just Started");
-            BluetoothSocket socket = null;
+//            BluetoothSocket socket = null;
             while (!Thread.interrupted()) { // Keep running until interrupted
                 try {
                     Log.d("inside RUN","Socket yet to accept");
@@ -174,8 +205,13 @@ public class SignerPage2 extends AppCompatActivity {
             Log.d("Accept thread run","Thread interrupted out of while loop");
         }
 
+        @SuppressLint("MissingPermission")
         private void manageConnectedSocketHCE_Card(BluetoothSocket socket) {
             Log.d("inside ManageConnectedSocket","Just Started");
+
+            // Storing the Remote device name for further connection
+            remoteDeviceName = socket.getRemoteDevice();
+            Log.d("Remote Device Name",remoteDeviceName.getName());
 
             // AsyncTask.execute(()->{
                 InputStream inputStream = null;
@@ -207,7 +243,7 @@ public class SignerPage2 extends AppCompatActivity {
 
                     Log.d("inside ManageConnectedSocket","Saving the file");
 
-                    byte[] buffer = new byte[1024*2];
+                    byte[] buffer = new byte[1024];
                     int bytesRead;
 
                     // Tracking the Progress
@@ -274,39 +310,157 @@ public class SignerPage2 extends AppCompatActivity {
         @SuppressLint("MissingPermission")
         public void cancel() {
             try {
-                // Unpair using reflection
-                if (socket != null && socket.getRemoteDevice() != null) {
-                    try {
-                        Method removeBondMethod = socket.getRemoteDevice().getClass().getMethod("removeBond");
-
-                        boolean result = false;
-                        Object returnValue = removeBondMethod.invoke(socket.getRemoteDevice());
-                        if (returnValue instanceof Boolean) {
-                            result = (Boolean) returnValue;
-                        }
-
-                        if (result) {
-                            Log.d(TAG, "Successfully unpaired device from receiver");
-                            runOnUiThread(() -> {
-                                Toast.makeText(SignerPage2.this, "Unpaired", Toast.LENGTH_SHORT).show();
-                            });
-                        } else {
-                            Log.e(TAG, "Failed to unpair device from receiver");
-                        }
-                    } catch (NoSuchMethodException e) {
-                        Log.e(TAG, "Method removeBond not found (receiver)", e);
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error occurred while unpairing (receiver)", e);
-                    }
-                } else {
-                    Log.e(TAG, "Cannot unpair: socket or remote device is null (receiver)");
-                }
+//                // Unpair using reflection
+//                if (socket != null && socket.getRemoteDevice() != null) {
+//                    try {
+//                        Method removeBondMethod = socket.getRemoteDevice().getClass().getMethod("removeBond");
+//
+//                        boolean result = false;
+//                        Object returnValue = removeBondMethod.invoke(socket.getRemoteDevice());
+//                        if (returnValue instanceof Boolean) {
+//                            result = (Boolean) returnValue;
+//                        }
+//
+//                        if (result) {
+//                            Log.d(TAG, "Successfully unpaired device from receiver");
+//                            runOnUiThread(() -> {
+//                                Toast.makeText(SignerPage2.this, "Unpaired", Toast.LENGTH_SHORT).show();
+//                            });
+//                        } else {
+//                            Log.e(TAG, "Failed to unpair device from receiver");
+//                        }
+//                    } catch (NoSuchMethodException e) {
+//                        Log.e(TAG, "Method removeBond not found (receiver)", e);
+//                    } catch (Exception e) {
+//                        Log.e(TAG, "Error occurred while unpairing (receiver)", e);
+//                    }
+//                } else {
+//                    Log.e(TAG, "Cannot unpair: socket or remote device is null (receiver)");
+//                }
 
                 Log.d("inside RUN IF","serverSocket Cancelled");
                 serverSocket.close();
                 Log.d("inside RUN IF","serverSocket closed");
+                Thread.currentThread().interrupt();
             } catch (IOException e) {
                 Log.e(TAG, "Could not close the connect socket", e);
+            }
+        }
+    }
+
+    private class ConnectThread extends Thread {
+        private final BluetoothSocket socket;
+
+        @SuppressLint("MissingPermission")
+        public ConnectThread(BluetoothDevice device) {
+            Log.d("inside ConnectThread Constructor", "just started");
+            BluetoothSocket tmp = null;
+
+            try {
+                Log.d("Inside Connect Thread ", "Got inside");
+                tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
+            } catch (Exception e) {
+                Log.e(TAG, "Socket's create() method failed", e);
+            }
+            Log.d("Inside Connect Thread", "Outside Try Block");
+            socket = tmp;
+            Log.d("Inside Connect Thread", "Method Finished");
+        }
+
+        public void run() {
+            if (ActivityCompat.checkSelfPermission(SignerPage2.this, android.Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED) {
+                Log.d("INSIDE IF BLOCK TO CHECK PERMISSIONS", "Will call check bluetooth method");
+                // checkBluetoothPermissions();
+            }
+            bluetoothAdapter.cancelDiscovery();
+            try {
+                socket.connect();
+                manageConnectedSocketSendByteArray(socket);
+            } catch (Exception e) {
+                Log.e(TAG, "Unable to connect; closing the socket", e);
+                try {
+                    socket.close();
+                } catch (Exception ex) {
+                    Log.e(TAG, "Could not close the client socket", ex);
+                }
+            }
+        }
+
+        private void manageConnectedSocketSendByteArray(BluetoothSocket socket) {
+            Log.d("Manage Connected Socket", "got inside");
+
+            OutputStream outputStream = null;
+            InputStream inputStream = null;
+            try {
+                outputStream = socket.getOutputStream();
+                inputStream = socket.getInputStream();
+
+                // Here, you need to prepare the byte array to be sent
+                // For example, you can load a byte array from a file or generate it programmatically
+
+                byte[] byteArrayToSend = encryptedSignatures; // Your byte array to send
+
+//                // Sending the total byte array size so as to track the received progress on the other side
+//                DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
+//                dataOutputStream.writeInt(byteArrayToSend.length);
+//                dataOutputStream.flush();
+
+                // Send the byte array
+                outputStream.write(byteArrayToSend);
+                outputStream.write("EOF".getBytes());
+                outputStream.flush();
+
+                // Wait for "ready" signal
+                byte[] readyBuffer = new byte[5];
+                int readyBytes = inputStream.read(readyBuffer); // Wait for "ready" from receiver
+                String readySignal = new String(readyBuffer, 0, readyBytes);
+                if ("ready".equals(readySignal)) {
+                    Log.d("ManageConnectedSocket HCE Reader", "Received 'ready' signal");
+                    runOnUiThread(() -> {
+//                        progressBar.setVisibility(View.GONE);
+//                        progressText.setText("Data Sent :)");
+                        Toast.makeText(SignerPage2.this, "Data sent and acknowledged", Toast.LENGTH_SHORT).show();
+                    });
+                } else {
+                    Log.d("ManageConnectedSocket HCE Reader", "Didn't receive 'ready' signal: " + readySignal); // If no "ready" is received
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error occurred when managing the connected socket", e);
+            } finally {
+                try {
+                    Log.d("ManageConnectedSocket HCE Reader", "Closing streams and socket");
+                    if (outputStream != null) outputStream.close();
+                    if (inputStream != null) inputStream.close();
+                    // if (socket != null) socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        @SuppressLint("MissingPermission")
+        public void cancel() {
+            try {
+                // Unpair Device using Reflection
+                if (remoteDeviceName != null) {
+                    Method removeBondMethod = remoteDeviceName.getClass().getMethod("removeBond");
+                    boolean result = (boolean) removeBondMethod.invoke(remoteDeviceName);
+                    if (result) {
+                        Log.d(TAG, "Successfully unpaired device");
+                        runOnUiThread(() -> Toast.makeText(SignerPage2.this, "Unpaired", Toast.LENGTH_SHORT).show());
+                    } else {
+                        Log.e(TAG, "Failed to unpair device");
+                    }
+                }
+
+                // Closing Socket
+                Log.d("inside RUN IF", "socket Cancelled");
+                if (socket != null) socket.close();
+                Log.d("inside RUN IF", "socket closed");
+            } catch (IOException e) {
+                Log.e(TAG, "Could not close the connect socket", e);
+            } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+                throw new RuntimeException(e);
             }
         }
     }
@@ -314,8 +468,8 @@ public class SignerPage2 extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (acceptThread!=null){
-            acceptThread.cancel();
+        if (connectThread!=null){
+            connectThread.cancel();
         }
     }
 
