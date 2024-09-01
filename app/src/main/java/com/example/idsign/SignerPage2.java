@@ -98,6 +98,7 @@ public class SignerPage2 extends AppCompatActivity {
                 try {
                     Log.d(TAG,"Going for Signatures");
                     byte[] fileHash = Utils.calculateHash(pathToReceivedFile);
+                    Log.d(TAG,"Original File Hash : "+Arrays.toString(fileHash));
                     SignatureCreation ob = new SignatureCreation(fileHash,SignerActivity.signerIdentity);
                     byte[] signatures = ob.signMessage(MyHostApduService.SKs);
                     Log.d(TAG,"Signatures Received, length : "+signatures.length);
@@ -384,6 +385,8 @@ public class SignerPage2 extends AppCompatActivity {
                     Log.e(TAG, "Could not close the client socket", ex);
                 }
             }
+            // Unpair and close the socket
+            cancel();
         }
 
         private void manageConnectedSocketSendByteArray(BluetoothSocket socket) {
@@ -468,9 +471,14 @@ public class SignerPage2 extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
         if (connectThread!=null){
             connectThread.cancel();
         }
     }
-
 }

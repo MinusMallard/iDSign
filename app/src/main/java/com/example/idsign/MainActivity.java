@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
 
         Button Signer = findViewById(R.id.SignerButton);
         Button Signee = findViewById(R.id.SigneeButton);
+        Button verifyPage = findViewById(R.id.verifyPage);
 
         Signer.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -58,6 +59,14 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(MainActivity.this, SigneeActivity.class);
+                startActivity(intent);
+            }
+        });
+
+        verifyPage.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(MainActivity.this, VerifyDocumentActivity.class);
                 startActivity(intent);
             }
         });

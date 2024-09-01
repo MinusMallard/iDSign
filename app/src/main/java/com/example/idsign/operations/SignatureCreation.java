@@ -5,10 +5,13 @@ import android.util.Log;
 import com.example.idsign.Utilities.PKG_Setup;
 import com.example.idsign.Utilities.Utils;
 
+import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 
 import it.unisa.dia.gas.jpbc.Element;
+import it.unisa.dia.gas.jpbc.Pairing;
 
 public class SignatureCreation {
 
@@ -43,4 +46,6 @@ public class SignatureCreation {
 
         return signature.array();
     }
+
+
 }

@@ -5,48 +5,43 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:background="@color/white">
+    tools:context=".VerifyDocumentActivity">
 
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/SignerButton"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
+        android:id="@+id/selectDocForVerification"
+        android:text="Select Document To Verify"
         app:layout_constraintTop_toTopOf="parent"
-        android:layout_marginTop="140sp"
-        android:text="Signer"
-        android:textSize="40sp"
-        android:paddingHorizontal="90sp"
-        android:paddingVertical="20dp"
-        />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/SigneeButton"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/SignerButton"
-        android:layout_marginTop="80sp"
-        android:text="Signee"
-        android:textSize="40sp"
-        android:paddingVertical="20dp"
-        android:paddingHorizontal="90sp"
+        android:layout_marginTop="130dp"
+        android:paddingHorizontal="50dp"
+        android:paddingVertical="18dp"
         />
 
-    <Button
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/verifyPage"
+        app:layout_constraintTop_toBottomOf="@id/selectDocForVerification"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/SigneeButton"
-        android:layout_marginTop="80sp"
-        android:text="Verify Documents"
-        android:textSize="40sp"
-        android:paddingVertical="10dp"
-        android:paddingHorizontal="20sp"/>
+        android:layout_marginTop="50dp"
+        android:layout_marginLeft="40dp"
+        android:layout_marginRight="40dp"
+        android:id="@+id/docAbsolutePathh"
+        android:text="Doc Path:"
+        />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/docAbsolutePathh"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="40dp"
+        android:textSize="45dp"
+        android:id="@+id/signOutcome"/>
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

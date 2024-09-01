@@ -48,8 +48,11 @@ dependencies {
     // Adding the Bouncy Castle Dependency for HKDF function
     implementation(files("libs/bcpkix-jdk15on-1.70.jar","libs/bcprov-jdk15on-1.70.jar"))
 
-    // Adding iText Library to manipulate PDF documents
-    implementation("com.itextpdf:itextpdf:5.5.13.3")
+    // Adding iText Library to manipulate PDF documents, excluding Bouncy Castle (v1.67)
+    implementation("com.itextpdf:itext7-core:7.1.14") {
+        exclude(group = "org.bouncycastle", module = "bcprov-jdk15on")
+        exclude(group = "org.bouncycastle", module = "bcpkix-jdk15on")
+    }
 
 
 }

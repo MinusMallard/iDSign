@@ -17,6 +17,8 @@ import android.nfc.NfcAdapter;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -61,16 +63,18 @@ public class SigneePage2 extends AppCompatActivity {
     private static BluetoothAdapter bluetoothAdapter;
     private ActivityResultLauncher<Intent> discoverableIntentLauncher;
     private ActivityResultLauncher<Intent> pickPdfLauncher;
-    private String pdfPath;
+    public static String pdfPath;
     private BluetoothDevice foundDevice;
     private boolean isReadyToSend = false;
-    private Button sendButton;
+    private Button sendButton,integrateSign;
     private ProgressBar progressBar;
     private TextView progressText;
     private String targetDeviceName;
     private boolean isReceiverRegistered = false;
     private ConnectThread connectThread;
     private AcceptThread acceptThread;
+    public static byte[] receivedEncryptedSignatures;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,8 +84,12 @@ public class SigneePage2 extends AppCompatActivity {
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
-        // Fetching Chooser Button
+        // Fetching Views
         Button chooseDocument = findViewById(R.id.buttonView);
+        integrateSign = findViewById(R.id.integrateSign);
+
+//        integrateSign.setVisibility(View.VISIBLE);
+//        integrateSign.setEnabled(false);
         TextView textView = findViewById(R.id.textView);
         progressText = findViewById(R.id.progressText);
         progressBar = findViewById(R.id.progressBar);
@@ -103,6 +111,25 @@ public class SigneePage2 extends AppCompatActivity {
             } else {
                 Toast.makeText(this, "Not ready to send yet or no file selected", Toast.LENGTH_SHORT).show();
             }
+        });
+
+        // Integrate Signatures
+        integrateSign.setOnClickListener(view -> {
+            acceptThread.cancel();
+
+            // Create a Handler
+            Handler handler = new Handler();
+
+            // Use postDelayed to schedule a task with a delay
+            handler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    // Code to run after the delay
+                    Intent intent = new Intent(SigneePage2.this, SigneePage3.class);
+                    startActivity(intent);
+                }
+            }, 1000); // 1000 milliseconds = 1 second
+
         });
 
         // Intent to make this device discoverable (using Activity Result API)
@@ -141,6 +168,16 @@ public class SigneePage2 extends AppCompatActivity {
 
     }
 
+    private void moveToAnotherActivity(){
+        // Move to another activity after receiving the signatures
+        if(receivedEncryptedSignatures!=null) {
+            Log.d(TAG,"Moving to another activity");
+            Intent intent = new Intent(SigneePage2.this, SigneePage3.class);
+            startActivity(intent);
+
+        }
+    }
+
     private void acceptSignatures(){
         if(connectThread!=null){
             Log.d(TAG,"Calling cancel method in connect thread class");
@@ -162,6 +199,8 @@ public class SigneePage2 extends AppCompatActivity {
     private void pairDevice(String deviceName) {
         targetDeviceName = deviceName;
 
+        Log.d(TAG,"Asking for discoverable permission");
+
         // Making device discoverable
         Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
         discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 600); // 10 minutes
@@ -180,9 +219,13 @@ public class SigneePage2 extends AppCompatActivity {
         receiver.setHceReaderActivity(this);
         receiver.setTargetDeviceName(targetDeviceName);
 
+        Log.d(TAG,"After Broadcast recevier");
+
         if(!isReadyToSend) {
+            Log.d(TAG,"inside if , before registering");
             IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
             registerReceiver(receiver, filter);
+            Log.d(TAG,"inside if, after registering");
         }
 
 
@@ -212,8 +255,10 @@ public class SigneePage2 extends AppCompatActivity {
         super.onResume();
         // These lines should be placed below BroadCast Receiver so that after discovering first device it again run these lines and after discover more devices
         if (!isReceiverRegistered && receiver != null && targetDeviceName != null) {
+            Log.d("onResume","before registering the receiver");
             IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
             registerReceiver(receiver, filter);
+            Log.d("onResume","after registering the receiver");
             isReceiverRegistered = true; // Mark the receiver as registered
         }
 
@@ -269,7 +314,7 @@ public class SigneePage2 extends AppCompatActivity {
                 }
             }
             runOnUiThread(()->{
-                new SigneePage2().acceptSignatures();
+                acceptSignatures();
             });
         }
 
@@ -463,33 +508,55 @@ public class SigneePage2 extends AppCompatActivity {
                 byteArrayOutputStream.flush();
 
                 // Removing the last 3 bytes (EOF) from the received Data
-                byte[] receivedEncryptedSignatures = Arrays.copyOfRange(receivedData,0,receivedData.length-3);
+                receivedEncryptedSignatures = Arrays.copyOfRange(receivedData,0,receivedData.length-3);
 
                 Log.d(TAG,"Length of received Encrypted Signatures"+receivedData.length);
                 Log.d(TAG,"received original Encrypted Signatures : "+ Arrays.toString(receivedData));
                 Log.d(TAG,"received Encrypted Signatures : "+ Arrays.toString(receivedEncryptedSignatures));
-                runOnUiThread(()->{
-                    try {
-                        Log.d(TAG, Arrays.toString(Utils.decryptByteArray(receivedEncryptedSignatures, SigneeActivity.HTK)));
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+//                runOnUiThread(()->{
+//                    try {
+//                        Log.d(TAG, Arrays.toString(Utils.decryptByteArray(receivedEncryptedSignatures, SigneeActivity.HTK)));
+//                    } catch (Exception e) {
+//                        throw new RuntimeException(e);
+//                    }
+//                });
 
 
                 outputStream.write("ready".getBytes());
                 Log.d("inside ManageConnectedSocket", "Sent ready signal");
 
-//                runOnUiThread(() -> {
-//                    isReceived = true;
-//                    openDoc.setEnabled(true);
-//                    signDoc.setEnabled(true);
-//                    progressText.setText("Data Received");
-//                    Toast.makeText(SignerPage2.this, "Data received", Toast.LENGTH_LONG).show();
-//                });
+//                // Move to another activity after receiving the signatures
+//                if(receivedEncryptedSignatures!=null) {
+//                    Log.d(TAG,"Moving to another activity");
+//                    runOnUiThread(() -> {
+//                        Intent intent = new Intent(SigneePage2.this, SigneePage3.class);
+//                        startActivity(intent);
+//                    });
+//                }
 
-                // Here, you can process the received byte array as needed
-                // Example: save the byte array to a file, display it, etc.
+//                // Move to another activity after receiving the signatures
+//                if (receivedEncryptedSignatures != null) {
+//                    mainHandler.post(() -> {
+//                        if (!isFinishing()) {
+//                            Intent intent = new Intent(SigneePage2.this, SigneePage3.class);
+//                            startActivity(intent);
+//                        }
+//                    });
+//                }
+
+//                new SigneePage2().moveToAnotherActivity();
+
+                runOnUiThread(() -> {
+                    if (integrateSign != null) {
+                    integrateSign.setVisibility(View.VISIBLE);
+                    progressText.setText("SIGNATURES RECEIVED");
+                    Toast.makeText(SigneePage2.this, "Data received", Toast.LENGTH_LONG).show();
+                    } else {
+                    Log.e(TAG, "integrateSign button is null");
+                    }
+                });
+
+
             } catch (Exception e) {
                 Log.e(TAG, "Error occurred when managing the connected socket", e);
             } finally {
@@ -498,6 +565,8 @@ public class SigneePage2 extends AppCompatActivity {
                     if (inputStream != null) inputStream.close();
                     if (outputStream != null) outputStream.close();
                     Log.d("Finally Block", "Closed all streams and socket");
+
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -540,7 +609,7 @@ public class SigneePage2 extends AppCompatActivity {
                 Log.d("inside RUN IF", "serverSocket Cancelled");
                 serverSocket.close();
                 Log.d("inside RUN IF", "serverSocket closed");
-                Thread.currentThread().interrupt();
+//                Thread.currentThread().interrupt();
             } catch (IOException e) {
                 Log.e(TAG, "Could not close the connect socket", e);
             }
@@ -554,9 +623,20 @@ public class SigneePage2 extends AppCompatActivity {
             unregisterReceiver(receiver);
             Log.d("Unregister Receiver","Successfully Unregistered");
         }
-        if(acceptThread!=null){
-            acceptThread.cancel();
-        }
+
     }
 
+    // Runs when switch to another activity
+    @Override
+    protected void onStop() {
+        super.onStop();
+        Log.d(TAG,"running onStop");
+        if (isReceiverRegistered && receiver != null) { // Unregister only if registered
+            unregisterReceiver(receiver);
+            Log.d("Unregister Receiver","Successfully Unregistered");
+        }
+//        if(acceptThread!=null){
+//            acceptThread.cancel();
+//        }
+    }
 }

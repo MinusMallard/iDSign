@@ -8,6 +8,11 @@ import android.provider.DocumentsContract;
 import android.provider.MediaStore;
 import android.util.Log;
 
+import com.itextpdf.kernel.pdf.PdfDocument;
+import com.itextpdf.kernel.pdf.PdfPage;
+import com.itextpdf.kernel.pdf.PdfReader;
+
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -191,20 +196,54 @@ public class Utils {
 //        return hexString.toString();
 //    }
 
+//    public static byte[] calculateHash(String filePath) {
+//        try (FileInputStream fis = new FileInputStream(filePath)) {
+//            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+//            byte[] buffer = new byte[1024];
+//            int bytesRead;
+//
+//            while ((bytesRead = fis.read(buffer)) != -1) {
+//                digest.update(buffer, 0, bytesRead);
+//            }
+//
+//            return digest.digest();
+//        } catch (IOException | NoSuchAlgorithmException e) {
+//            e.printStackTrace();
+//            return null;
+//        }
+//    }
+
+    // Method to calculate hash of the content part of the PDF, excluding metadata
     public static byte[] calculateHash(String filePath) {
         try (FileInputStream fis = new FileInputStream(filePath)) {
+            // Load the PDF document
+            PdfReader reader = new PdfReader(filePath);
+            PdfDocument pdfDoc = new PdfDocument(reader);
+
+            // Get the bytes of the content stream (excluding metadata)
+            byte[] contentBytes = extractContentBytes(pdfDoc);
+
+            // Create the hash digest of the content bytes
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-
-            while ((bytesRead = fis.read(buffer)) != -1) {
-                digest.update(buffer, 0, bytesRead);
-            }
-
+            digest.update(contentBytes);
             return digest.digest();
         } catch (IOException | NoSuchAlgorithmException e) {
             e.printStackTrace();
             return null;
         }
+    }
+
+    // Helper method to extract the content bytes of the PDF, excluding metadata
+    private static byte[] extractContentBytes(PdfDocument pdfDoc) throws IOException {
+        // You can iterate through the content of each page and extract content streams
+        ByteArrayOutputStream contentStream = new ByteArrayOutputStream();
+
+        for (int i = 1; i <= pdfDoc.getNumberOfPages(); i++) {
+            PdfPage page = pdfDoc.getPage(i);
+            byte[] pageContent = page.getContentBytes();
+            contentStream.write(pageContent);
+        }
+
+        return contentStream.toByteArray();
     }
 }

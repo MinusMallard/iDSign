@@ -31,6 +31,9 @@
         android:theme="@style/Theme.IDSign"
         tools:targetApi="31">
         <activity
+            android:name=".VerifyDocumentActivity"
+            android:exported="false" />
+        <activity
             android:name=".SigneePage3"
             android:exported="false" />
         <activity
