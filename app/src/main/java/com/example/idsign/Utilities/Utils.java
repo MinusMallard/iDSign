@@ -91,7 +91,7 @@ public class Utils {
         return digest.digest(data.getBytes());
     }
 
-    // Decrypt a byte array using AES and HTK
+    // Decrypt a byte array using AES (HTK)
     public static String decrypt(byte[] encryptedData, byte[] HTK) throws Exception {
         SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128
         Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
@@ -100,7 +100,7 @@ public class Utils {
         return new String(decryptedData, StandardCharsets.UTF_8);
     }
 
-    // Encrypt a string using AES and HTK
+    // Encrypt a string using AES (HTK)
     public static byte[] encrypt(String data, byte[] HTK) throws Exception {
         SecretKey secretKey = new SecretKeySpec(HTK, 0, 16, "AES"); // Use first 16 bytes for AES-128, to use AES256 just replace the value 16 with 32
         Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");

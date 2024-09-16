@@ -32,24 +32,31 @@
         tools:targetApi="31">
         <activity
             android:name=".VerifyDocumentActivity"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".SigneePage3"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".SigneePage2"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".SignerPage2"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".SigneeActivity"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".SignerActivity"
+            android:screenOrientation="portrait"
             android:exported="false" />
         <activity
             android:name=".MainActivity"
+            android:screenOrientation="portrait"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

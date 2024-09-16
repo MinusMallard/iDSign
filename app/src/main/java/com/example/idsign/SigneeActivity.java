@@ -133,6 +133,11 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
         });
         IsoDep isoDep = IsoDep.get(tag);
 
+        // Timing Function
+        long startTime = System.currentTimeMillis();
+
+
+
         if (isoDep != null) {
             try {
 
@@ -286,6 +291,13 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
                 throw new RuntimeException(e);
             }
 
+            long endTime = System.currentTimeMillis();
+
+            // Calculate execution time
+            long executionTime = endTime - startTime;
+
+            // Log the execution time
+            Log.d("ExecutionTime", "Execution time in milliseconds: " + executionTime);
 
         }
     }

@@ -187,8 +187,6 @@ public class MyHostApduService extends HostApduService {
             Log.d("Final Log from HCE","device name sent");
             return responseAPDU;
         }
-
-
         return new byte[0];
     }
 

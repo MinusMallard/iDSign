@@ -218,17 +218,48 @@ public class SigneePage2 extends AppCompatActivity {
         receiver = new BluetoothDeviceFoundReceiver();
         receiver.setHceReaderActivity(this);
         receiver.setTargetDeviceName(targetDeviceName);
+        receiver.setBluetoothAdapter(bluetoothAdapter);
 
         Log.d(TAG,"After Broadcast recevier");
 
-        if(!isReadyToSend) {
-            Log.d(TAG,"inside if , before registering");
-            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+//        if(!isReadyToSend) {
+//            Log.d(TAG,"inside if , before registering");
+//            IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
+//            registerReceiver(receiver, filter);
+//            Log.d(TAG,"inside if, after registering");
+//        }
+
+        // Start discovery after making the device discoverable
+        if (!isReceiverRegistered) {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(BluetoothDevice.ACTION_FOUND);
+            filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED);
             registerReceiver(receiver, filter);
-            Log.d(TAG,"inside if, after registering");
+            isReceiverRegistered = true;
         }
 
+        // Start discovery
+        @SuppressLint("MissingPermission") boolean startedDiscovery = bluetoothAdapter.startDiscovery();
+        Log.d(TAG, "Bluetooth Discovery started: " + startedDiscovery);
 
+        Handler handler = new Handler(Looper.getMainLooper());
+        handler.postDelayed(() -> {
+            if (!isReadyToSend) {
+                Log.d(TAG, "Device not found, restarting discovery");
+                restartBluetoothDiscovery();
+            }
+        }, 30000); // Wait 30 seconds before restarting discovery
+
+
+    }
+
+    @SuppressLint("MissingPermission")
+    private void restartBluetoothDiscovery() {
+        bluetoothAdapter.cancelDiscovery();
+        new Handler().postDelayed(() -> {
+            boolean started = bluetoothAdapter.startDiscovery();
+            Log.d(TAG, "Restarted Bluetooth Discovery: " + started);
+        }, 5000); // Restart after 5 seconds
     }
 
     @SuppressLint("MissingPermission")
@@ -619,10 +650,20 @@ public class SigneePage2 extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (isReceiverRegistered && receiver != null) { // Unregister only if registered
-            unregisterReceiver(receiver);
-            Log.d("Unregister Receiver","Successfully Unregistered");
+        // Unregister the receiver if it's still registered when the activity is destroyed
+        if (isReceiverRegistered && receiver != null) {
+            try {
+                unregisterReceiver(receiver);
+                Log.d("Unregister Receiver", "Successfully Unregistered in onDestroy");
+                isReceiverRegistered = false;
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Receiver was not registered or already unregistered in onDestroy", e);
+            }
         }
+
+//        if (acceptThread != null) {
+//            acceptThread.cancel();
+//        }
 
     }
 
@@ -631,10 +672,21 @@ public class SigneePage2 extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         Log.d(TAG,"running onStop");
-        if (isReceiverRegistered && receiver != null) { // Unregister only if registered
-            unregisterReceiver(receiver);
-            Log.d("Unregister Receiver","Successfully Unregistered");
+
+        if (isReceiverRegistered && receiver != null) {
+            try {
+                unregisterReceiver(receiver);
+                Log.d("Unregister Receiver", "Successfully Unregistered");
+                isReceiverRegistered = false; // Reset the flag after unregistering
+            } catch (IllegalArgumentException e) {
+                Log.e(TAG, "Receiver was not registered or already unregistered", e);
+            }
         }
+
+//        if (isReceiverRegistered && receiver != null) { // Unregister only if registered
+//            unregisterReceiver(receiver);
+//            Log.d("Unregister Receiver","Successfully Unregistered");
+//        }
 //        if(acceptThread!=null){
 //            acceptThread.cancel();
 //        }
