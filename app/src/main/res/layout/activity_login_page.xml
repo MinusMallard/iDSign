@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".auth.LoginPage">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginTop="100dp"
+        android:text="Login / Register"
+        android:textSize="30dp"
+        android:id="@+id/loginHeading"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:layout_width="0dp"
+        android:layout_marginHorizontal="50dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/loginHeading"
+        android:layout_marginTop="90dp"
+        android:inputType="phone"
+        android:hint="Enter Phone No"
+        android:id="@+id/enterNumber"/>
+
+    <EditText
+        android:layout_width="0dp"
+        android:layout_marginHorizontal="50dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/enterNumber"
+        android:layout_marginTop="20dp"
+        android:visibility="invisible"
+        android:inputType="number"
+        android:hint="Enter OTP"
+        android:id="@+id/verifyOTPEditText"/>
+
+
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/enterNumber"
+        android:layout_marginTop="120dp"
+        android:textSize="30dp"
+        android:id="@+id/getOTP"
+        android:text="Get OTP"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/enterNumber"
+        android:layout_marginTop="120dp"
+        android:textSize="30dp"
+        android:visibility="gone"
+        android:id="@+id/verifyOTP"
+        android:text="Verify OTP"/>
+
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

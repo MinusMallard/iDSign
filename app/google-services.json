@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "477728284495",
+    "project_id": "idsign-c7310",
+    "storage_bucket": "idsign-c7310.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:477728284495:android:df7c280126de745f382f3a",
+        "android_client_info": {
+          "package_name": "com.example.idsign"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCzurSN0QGwOfq5WhB1dWqv6T6e7bdpZyU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
