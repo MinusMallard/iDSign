@@ -48,7 +48,11 @@ public class SignerActivity extends AppCompatActivity {
             throw new RuntimeException(e);
         }
 
+        String base64PublicKey = getIntent().getStringExtra("hash");
+        String base64PrivateKey = getIntent().getStringExtra("privateKey");
         Intent intent = new Intent(this, MyHostApduService.class);
+        intent.putExtra("hash", base64PublicKey);
+        intent.putExtra("privateKey", base64PrivateKey);
         startService(intent);
     }
 

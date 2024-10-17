@@ -37,16 +37,19 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import it.unisa.dia.gas.jpbc.Element;
+import it.unisa.dia.gas.plaf.jpbc.util.io.Base64;
 
 public class SigneeActivity extends AppCompatActivity implements NfcAdapter.ReaderCallback {
 
     static Element SKd, PKd, EKs, PKs;
+    public static Element SKd_check,PKd_check;
     String IDd = "signeeapp@hcereader.com";
     RecyclerView recyclerView;
     List<Task> taskList;
     TaskAdapter taskAdapter;
     public static String deviceName;
     public static byte[] HTK;
+    String TAG = "Signee";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,15 +71,35 @@ public class SigneeActivity extends AppCompatActivity implements NfcAdapter.Read
         TextView defaultSigneeId = findViewById(R.id.emailID);
         defaultSigneeId.setText("Default EmailID: " + IDd);
 
-        // Generating Signee App Key Pair
+        //Generating Signee App Key Pair
         try {
+            Intent intent = getIntent();
+            String base64PublicKey = intent.getStringExtra("hash");
+            String base64PrivateKey = intent.getStringExtra("privateKey");
             PKG_Setup.setup(this);
-            PKd = PKG_Setup.getPublicKey(IDd);
-            SKd = PKG_Setup.getPrivateKey(PKd);
-            Log.d("SIGNEE APP PKd : ", PKd.toString());
-            Log.d("SIGNEE APP SKd : ", SKd.toString());
-        } catch (NoSuchAlgorithmException | IOException e) {
-            throw new RuntimeException(e);
+
+            // Convert the Base64-encoded public key to a byte array
+            assert base64PublicKey != null;
+            byte[] publicKeyBytes = Base64.decode(base64PublicKey);
+
+            // Convert the byte array to an Element
+            PKd = PKG_Setup.pairing.getG1().newElementFromBytes(publicKeyBytes).getImmutable();
+            PKd_check = PKG_Setup.getPublicKey(IDd);
+
+            // Convert the Base64-encoded private key to a byte array
+            assert base64PrivateKey != null;
+            byte[] privateKeyBytes = Base64.decode(base64PrivateKey);
+
+            // Convert the byte array to an Element
+            SKd = PKG_Setup.pairing.getG1().newElementFromBytes(privateKeyBytes).getImmutable();
+            SKd_check = PKG_Setup.getPrivateKey(PKd_check);
+            assert PKd != null;
+            Log.d(TAG+" PKd : ",PKd.toString());
+            Log.d(TAG+" SKd : ",SKd.toString());
+            Log.d(TAG+" PKd_check : ",PKd_check.toString());
+            Log.d(TAG+" SKd_check : ",SKd_check.toString());
+        } catch (NoSuchAlgorithmException | IOException a) {
+            throw new RuntimeException(a);
         }
 
         // Handling NFC Reader Mode

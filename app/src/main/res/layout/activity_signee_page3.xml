@@ -24,12 +24,25 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/selectDocToVerify"
-        android:text="Select Document To Verify"
+        android:id="@+id/signMoreFilesSignee"
+        android:text="Sign More Files"
         app:layout_constraintTop_toBottomOf="@+id/viewSignedDoc"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginTop="130dp"
+        android:layout_marginTop="50dp"
+        android:paddingHorizontal="50dp"
+        android:paddingVertical="18dp"
+        />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/selectDocToVerify"
+        android:text="Select Document To Verify"
+        app:layout_constraintTop_toBottomOf="@+id/signMoreFilesSignee"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="50dp"
         android:paddingHorizontal="50dp"
         android:paddingVertical="18dp"
         />

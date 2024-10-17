@@ -29,11 +29,13 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 import it.unisa.dia.gas.jpbc.Element;
+import it.unisa.dia.gas.plaf.jpbc.util.io.Base64;
 
 public class MyHostApduService extends HostApduService {
 
     private String TAG = "MyHostApduService";
     public static Element PKs,SKs,PKd,EKd,x;
+    public static Element PKs_check,SKs_check;
     public static List<Task> taskList = new ArrayList<>();
     private TaskAdapter taskAdapter;
     public static RecyclerView recyclerView;
@@ -47,13 +49,35 @@ public class MyHostApduService extends HostApduService {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         try {
-            PKs = PKG_Setup.getPublicKey(IDs);
-            SKs = PKG_Setup.getPrivateKey(PKs);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
+            String base64PublicKey = intent.getStringExtra("hash");
+            Log.d("BASE64",base64PublicKey);
+            String base64PrivateKey = intent.getStringExtra("privateKey");
+            PKG_Setup.setup(this);
+
+            // Convert the Base64-encoded public key to a byte array
+            byte[] publicKeyBytes = Base64.decode(base64PublicKey);
+//            byte[] publicKeyBytes = base64PublicKey.getBytes("UTF-8");
+
+            // Convert the byte array to an Element
+            PKs = PKG_Setup.pairing.getG1().newElementFromBytes(publicKeyBytes).getImmutable();
+            PKs_check = PKG_Setup.getPublicKey(IDs);
+
+            // Convert the Base64-encoded private key to a byte array
+            byte[] privateKeyBytes = Base64.decode(base64PrivateKey);
+//            byte[] privateKeyBytes = base64PrivateKey.getBytes("UTF-8");
+
+            // Convert the byte array to an Element
+            SKs = PKG_Setup.pairing.getG1().newElementFromBytes(privateKeyBytes).getImmutable();
+            SKs_check = PKG_Setup.getPrivateKey(PKs_check);
+
+        } catch (Exception e) {
+            // Handle any errors that might occur
+            e.printStackTrace();
         }
         Log.d(TAG+" PKs : ",PKs.toString());
         Log.d(TAG+" SKs : ",SKs.toString());
+        Log.d(TAG+" PKs_check : ",PKs_check.toString());
+        Log.d(TAG+" SKs_check : ",SKs_check.toString());
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -185,16 +209,29 @@ public class MyHostApduService extends HostApduService {
                 throw new RuntimeException(e);
             }
             Log.d("Final Log from HCE","device name sent");
+
+            switchActivityWithDelay();
             return responseAPDU;
         }
         return new byte[0];
     }
 
+    private void switchActivityWithDelay() {
+        new android.os.Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Intent intent = new Intent(MyHostApduService.this, SignerPage2.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+            }
+        }, 500); // Delay for 500ms (or adjust the delay as needed)
+    }
+
     @Override
     public void onDeactivated(int reason) {
-        Intent intent = new Intent(this, SignerPage2.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
+//        Intent intent = new Intent(this, SignerPage2.class);
+//        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//        startActivity(intent);
     }
 
     // Generate Handshake Traffic Key (HTK) using HKDF

@@ -54,12 +54,44 @@
         app:layout_constraintRight_toRightOf="parent"
         android:layout_marginTop="60dp"
         android:textSize="20dp"
+        android:text="View Signed Doc"
+        android:paddingHorizontal="70dp"
+        android:paddingVertical="20dp"
+        android:visibility="invisible"
+        android:id="@+id/viewSignedDocSigner"
+        />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/viewSignedDocSigner"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="60dp"
+        android:textSize="20dp"
         android:text="Send Signatures"
         android:paddingHorizontal="70dp"
         android:paddingVertical="20dp"
         android:visibility="invisible"
         android:id="@+id/sendSign"
         />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/viewSignedDocSigner"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:layout_marginTop="60dp"
+        android:textSize="20dp"
+        android:text="Sign More Files"
+        android:paddingHorizontal="70dp"
+        android:paddingVertical="20dp"
+        android:visibility="invisible"
+        android:id="@+id/signMoreFiles"
+        />
+
+
 
 
 

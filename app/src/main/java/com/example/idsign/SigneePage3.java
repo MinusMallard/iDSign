@@ -48,6 +48,7 @@ public class SigneePage3 extends AppCompatActivity {
         setContentView(R.layout.activity_signee_page3);
 
         Button selectDocToVerify = findViewById(R.id.selectDocToVerify);
+        Button signMoreFilesSignee = findViewById(R.id.signMoreFilesSignee);
         TextView docPath = findViewById(R.id.docPath);
         TextView signResult = findViewById(R.id.signResult);
         SignatureVerification sv = new SignatureVerification();
@@ -76,8 +77,14 @@ public class SigneePage3 extends AppCompatActivity {
 
         // Get the public Downloads directory
         File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        String fileName = "Digitally_Signed_Document.pdf";
-        File file = new File(downloadsDir, fileName);
+//        String fileName = "Digitally_Signed_Document.pdf";
+//        File file = new File(downloadsDir, fileName);
+
+        String baseFileName = "Digitally_Signed_Document";
+        String fileExtension = ".pdf";
+
+        // Get a unique file name
+        File file = getUniqueFile(baseFileName, downloadsDir, fileExtension);
 
         // Fetching the absolute path of the file to get the path
         destinationPath = file.getAbsolutePath();
@@ -126,6 +133,11 @@ public class SigneePage3 extends AppCompatActivity {
 
         });
 
+        signMoreFilesSignee.setOnClickListener(view -> {
+            Intent intent = new Intent(SigneePage3.this, SigneePage2.class);
+            startActivity(intent);
+        });
+
         // Intent to launch media picker
         pickPdfLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -161,11 +173,21 @@ public class SigneePage3 extends AppCompatActivity {
                     }
                 }
         );
-
-
-
-
     }
+
+    public File getUniqueFile(String baseFileName, File directory, String extension) {
+        File file = new File(directory, baseFileName + extension);
+        int fileCount = 0;
+
+        // Check if the file already exists, and if it does, increment the counter
+        while (file.exists()) {
+            fileCount++;
+            file = new File(directory, baseFileName + "(" + fileCount + ")" + extension);
+        }
+
+        return file;
+    }
+
 
     private void pickPdf() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);

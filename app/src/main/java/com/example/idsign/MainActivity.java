@@ -50,7 +50,8 @@ public class MainActivity extends AppCompatActivity {
         Signer.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, SignerActivity.class);
+                Intent intent = new Intent(MainActivity.this, LoadingScreen.class);
+                intent.putExtra("ID", "Signer");
                 startActivity(intent);
             }
         });
@@ -58,7 +59,8 @@ public class MainActivity extends AppCompatActivity {
         Signee.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, SigneeActivity.class);
+                Intent intent = new Intent(MainActivity.this, LoadingScreen.class);
+                intent.putExtra("ID", "Signee");
                 startActivity(intent);
             }
         });

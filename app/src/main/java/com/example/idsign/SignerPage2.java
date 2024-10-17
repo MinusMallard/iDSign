@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -27,6 +28,7 @@ import androidx.core.content.FileProvider;
 
 import com.example.idsign.Utilities.MyHostApduService;
 import com.example.idsign.Utilities.Utils;
+import com.example.idsign.operations.PDFSignatureIntegrator;
 import com.example.idsign.operations.SignatureCreation;
 
 import java.io.DataInputStream;
@@ -37,7 +39,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.security.GeneralSecurityException;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -52,10 +57,12 @@ public class SignerPage2 extends AppCompatActivity {
     private ConnectThread connectThread;
     TextView progressText;
     Boolean isReceived = false;
-    Button openDoc,signDoc,sendSign;
+    Button openDoc,signDoc,sendSign,viewSignedDocSigner,signMoreFiles;
     String pathToReceivedFile;
     BluetoothDevice remoteDeviceName;
     private byte[] encryptedSignatures;
+    byte[] signatures;
+    String destinationPath;
 
 
     @Override
@@ -73,6 +80,21 @@ public class SignerPage2 extends AppCompatActivity {
         // Fetching Sign Document button
         signDoc = findViewById(R.id.signDoc);
         sendSign = findViewById(R.id.sendSign);
+        viewSignedDocSigner = findViewById(R.id.viewSignedDocSigner);
+        signMoreFiles = findViewById(R.id.signMoreFiles);
+
+        // Handle the back button press with the OnBackPressedDispatcher
+        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Custom back button behavior
+                // Do nothing or add your own logic here
+                // For example, show a toast or close the app
+                // Toast.makeText(MainActivity.this, "Back button pressed!", Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        getOnBackPressedDispatcher().addCallback(this, callback);
 
         // Click listener to open the received document
         openDoc.setOnClickListener(view -> {
@@ -100,7 +122,7 @@ public class SignerPage2 extends AppCompatActivity {
                     byte[] fileHash = Utils.calculateHash(pathToReceivedFile);
                     Log.d(TAG,"Original File Hash : "+Arrays.toString(fileHash));
                     SignatureCreation ob = new SignatureCreation(fileHash,SignerActivity.signerIdentity);
-                    byte[] signatures = ob.signMessage(MyHostApduService.SKs);
+                    signatures = ob.signMessage(MyHostApduService.SKs);
                     Log.d(TAG,"Signatures Received, length : "+signatures.length);
                     Log.d(TAG,"Original Signatures : "+ Arrays.toString(signatures));
                     encryptedSignatures = Utils.encryptByteArray(signatures, MyHostApduService.HTK);
@@ -110,12 +132,30 @@ public class SignerPage2 extends AppCompatActivity {
                     throw new RuntimeException(e);
                 }
                 Toast.makeText(this,"Signatures Generated",Toast.LENGTH_SHORT).show();
+                integrateAndSaveSignedDoc(signatures);
+                progressText.setVisibility(View.GONE);
                 signDoc.setVisibility(View.INVISIBLE);
                 sendSign.setVisibility(View.VISIBLE);
                 acceptThread.cancel();
             }else {
                 Toast.makeText(this,"Document Not Received Yet",Toast.LENGTH_SHORT).show();
             }
+        });
+
+        viewSignedDocSigner.setOnClickListener(view -> {
+            File fil = new File(destinationPath);
+
+            Uri contentUri = FileProvider.getUriForFile(this,  "com.example.idsign.provider", fil);
+
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(contentUri, "application/pdf");
+            intent.setFlags(Intent.FLAG_ACTIVITY_NO_HISTORY | Intent.FLAG_GRANT_READ_URI_PERMISSION);  // Add this flag
+            startActivity(intent);
+        });
+
+        signMoreFiles.setOnClickListener(view -> {
+            Intent intent = new Intent(SignerPage2.this, SignerPage2.class);
+            startActivity(intent);
         });
 
         sendSign.setOnClickListener(view -> {
@@ -147,6 +187,67 @@ public class SignerPage2 extends AppCompatActivity {
         acceptThread = new AcceptThread();
         acceptThread.start();
 
+
+    }
+
+    public File getUniqueFile(String baseFileName, File directory, String extension) {
+        File file = new File(directory, baseFileName + extension);
+        int fileCount = 0;
+
+        // Check if the file already exists, and if it does, increment the counter
+        while (file.exists()) {
+            fileCount++;
+            file = new File(directory, baseFileName + "(" + fileCount + ")" + extension);
+        }
+
+        return file;
+    }
+
+    private void integrateAndSaveSignedDoc(byte[] originalSignatures){
+        // Get the public Downloads directory
+        File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+//        String fileName = "Digitally_Signed_Document.pdf";
+//        File file = new File(downloadsDir, fileName);
+
+        String baseFileName = "Digitally_Signed_Document";
+        String fileExtension = ".pdf";
+
+        // Get a unique file name
+        File file = getUniqueFile(baseFileName, downloadsDir, fileExtension);
+
+        destinationPath = file.getAbsolutePath();
+        Log.d(TAG,"Destination path: " + destinationPath);
+
+        // Integrating the signatures with the PDF
+        try {
+            Log.d(TAG,"Going for integration");
+            // Fetching current Timestamp
+            LocalDateTime currentTime = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            String formattedTimestamp = currentTime.format(formatter);
+
+            PDFSignatureIntegrator.embedSignatureWithField(pathToReceivedFile,destinationPath,originalSignatures,"Himanshu Sharma",formattedTimestamp);
+//            PDFSignatureIntegrator.signPDF("/storage/emulated/0/Download/received_document.pdf",destinationPath,originalSignatures,signerIdentity);
+
+//            byte[] fileHash = Utils.calculateHash(originalPdfPath);
+//            Log.d(TAG,"Original File Hash : "+Arrays.toString(fileHash));
+//
+//            byte[] signedFileHash = Utils.calculateHash(destinationPath);
+//            Log.d(TAG,"Signed File Hash : "+Arrays.toString(signedFileHash));
+//            Log.d(TAG,"Integration Done");
+
+//            assert fileHash != null;
+//            if (Arrays.equals(fileHash, signedFileHash)){
+//                Toast.makeText(this,"Digitally Signed PDF VERIFIED: Signatures are Valid",Toast.LENGTH_LONG).show();
+//            }
+
+            viewSignedDocSigner.setVisibility(View.VISIBLE);
+        } catch (IOException e) {
+            Log.d(TAG,"Error Occurred");
+            throw new RuntimeException(e);
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException(e);
+        }
 
     }
 
@@ -386,7 +487,13 @@ public class SignerPage2 extends AppCompatActivity {
                 }
             }
             // Unpair and close the socket
+            Log.d("run function","Called Cancel from run method");
             cancel();
+            runOnUiThread(() -> {
+                Log.d("changing UI","adding button");
+                sendSign.setVisibility(View.INVISIBLE);
+                signMoreFiles.setVisibility(View.VISIBLE);
+            });
         }
 
         private void manageConnectedSocketSendByteArray(BluetoothSocket socket) {
@@ -444,17 +551,17 @@ public class SignerPage2 extends AppCompatActivity {
         @SuppressLint("MissingPermission")
         public void cancel() {
             try {
-                // Unpair Device using Reflection
-                if (remoteDeviceName != null) {
-                    Method removeBondMethod = remoteDeviceName.getClass().getMethod("removeBond");
-                    boolean result = (boolean) removeBondMethod.invoke(remoteDeviceName);
-                    if (result) {
-                        Log.d(TAG, "Successfully unpaired device");
-                        runOnUiThread(() -> Toast.makeText(SignerPage2.this, "Unpaired", Toast.LENGTH_SHORT).show());
-                    } else {
-                        Log.e(TAG, "Failed to unpair device");
-                    }
-                }
+//                // Unpair Device using Reflection
+//                if (remoteDeviceName != null) {
+//                    Method removeBondMethod = remoteDeviceName.getClass().getMethod("removeBond");
+//                    boolean result = (boolean) removeBondMethod.invoke(remoteDeviceName);
+//                    if (result) {
+//                        Log.d(TAG, "Successfully unpaired device");
+//                        runOnUiThread(() -> Toast.makeText(SignerPage2.this, "Unpaired", Toast.LENGTH_SHORT).show());
+//                    } else {
+//                        Log.e(TAG, "Failed to unpair device");
+//                    }
+//                }
 
                 // Closing Socket
                 Log.d("inside RUN IF", "socket Cancelled");
@@ -462,8 +569,6 @@ public class SignerPage2 extends AppCompatActivity {
                 Log.d("inside RUN IF", "socket closed");
             } catch (IOException e) {
                 Log.e(TAG, "Could not close the connect socket", e);
-            } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-                throw new RuntimeException(e);
             }
         }
     }
@@ -478,6 +583,7 @@ public class SignerPage2 extends AppCompatActivity {
     protected void onStop() {
         super.onStop();
         if (connectThread!=null){
+            Log.d("onSTOP","Called Cancel from OnStop");
             connectThread.cancel();
         }
     }

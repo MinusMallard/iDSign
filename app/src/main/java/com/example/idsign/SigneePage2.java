@@ -29,6 +29,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -101,6 +102,19 @@ public class SigneePage2 extends AppCompatActivity {
         chooseDocument.setOnClickListener(v -> {
             pickPdf();
         });
+
+        // Handle the back button press with the OnBackPressedDispatcher
+        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Custom back button behavior
+                // Do nothing or add your own logic here
+                // For example, show a toast or close the app
+                // Toast.makeText(MainActivity.this, "Back button pressed!", Toast.LENGTH_SHORT).show();
+            }
+        };
+
+        getOnBackPressedDispatcher().addCallback(this, callback);
 
         // On Send Button clicked
         sendButton.setOnClickListener(view -> {
@@ -580,6 +594,9 @@ public class SigneePage2 extends AppCompatActivity {
                 runOnUiThread(() -> {
                     if (integrateSign != null) {
                     integrateSign.setVisibility(View.VISIBLE);
+                    sendButton.setVisibility(View.INVISIBLE);
+                    progressText.setVisibility(View.INVISIBLE);
+
                     progressText.setText("SIGNATURES RECEIVED");
                     Toast.makeText(SigneePage2.this, "Data received", Toast.LENGTH_LONG).show();
                     } else {
@@ -608,33 +625,33 @@ public class SigneePage2 extends AppCompatActivity {
         @SuppressLint("MissingPermission")
         public void cancel() {
             try {
-                 // Unpair using reflection
-                if (socket != null && socket.getRemoteDevice() != null) {
-                    try {
-                        Method removeBondMethod = socket.getRemoteDevice().getClass().getMethod("removeBond");
-
-                        boolean result = false;
-                        Object returnValue = removeBondMethod.invoke(socket.getRemoteDevice());
-                        if (returnValue instanceof Boolean) {
-                            result = (Boolean) returnValue;
-                        }
-
-                        if (result) {
-                            Log.d(TAG, "Successfully unpaired device from receiver");
-                            runOnUiThread(() -> {
-                                Toast.makeText(SigneePage2.this, "Unpaired", Toast.LENGTH_SHORT).show();
-                            });
-                        } else {
-                            Log.e(TAG, "Failed to unpair device from receiver");
-                        }
-                    } catch (NoSuchMethodException e) {
-                        Log.e(TAG, "Method removeBond not found (receiver)", e);
-                    } catch (Exception e) {
-                        Log.e(TAG, "Error occurred while unpairing (receiver)", e);
-                    }
-                } else {
-                    Log.e(TAG, "Cannot unpair: socket or remote device is null (receiver)");
-                }
+//                 // Unpair using reflection
+//                if (socket != null && socket.getRemoteDevice() != null) {
+//                    try {
+//                        Method removeBondMethod = socket.getRemoteDevice().getClass().getMethod("removeBond");
+//
+//                        boolean result = false;
+//                        Object returnValue = removeBondMethod.invoke(socket.getRemoteDevice());
+//                        if (returnValue instanceof Boolean) {
+//                            result = (Boolean) returnValue;
+//                        }
+//
+//                        if (result) {
+//                            Log.d(TAG, "Successfully unpaired device from receiver");
+//                            runOnUiThread(() -> {
+//                                Toast.makeText(SigneePage2.this, "Unpaired", Toast.LENGTH_SHORT).show();
+//                            });
+//                        } else {
+//                            Log.e(TAG, "Failed to unpair device from receiver");
+//                        }
+//                    } catch (NoSuchMethodException e) {
+//                        Log.e(TAG, "Method removeBond not found (receiver)", e);
+//                    } catch (Exception e) {
+//                        Log.e(TAG, "Error occurred while unpairing (receiver)", e);
+//                    }
+//                } else {
+//                    Log.e(TAG, "Cannot unpair: socket or remote device is null (receiver)");
+//                }
 
                 // Closing Socket
                 Log.d("inside RUN IF", "serverSocket Cancelled");
